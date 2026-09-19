@@ -1,0 +1,243 @@
+/* Static Search settings screen. */
+
+.static-search-admin .static-search-status {
+	max-width: 46rem;
+}
+
+.static-search-admin .static-search-status th {
+	width: 11rem;
+}
+
+.static-search-admin .static-search-rebuild {
+	margin: 1rem 0 0;
+}
+
+.static-search-admin .static-search-excluded {
+	max-width: 46rem;
+}
+
+.static-search-admin fieldset label {
+	line-height: 2;
+}
+
+/* Drag-and-drop ranking lists ------------------------------------------------ */
+
+/* One equal-width tab per row: grip on the left, arrows anchored on the right. */
+.static-search-admin .static-search-sortable {
+	box-sizing: border-box;
+	max-width: 36rem;
+	margin: 0 0 0.75rem;
+	padding: 12px;
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 8px;
+}
+
+.static-search-admin .static-search-sortable__list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.static-search-admin .static-search-sortable__item {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	box-sizing: border-box;
+	width: 100%;
+	min-height: 44px;
+	margin: 0;
+	padding: 6px 8px 6px 14px;
+	background: #f6f7f7;
+	border: 1px solid #dcdcde;
+	border-radius: 8px;
+}
+
+.static-search-admin .static-search-sortable__item:hover {
+	border-color: #a7aaad;
+}
+
+/* Two columns of three dots: the drag grip. */
+.static-search-admin .static-search-sortable__handle {
+	flex: none;
+	width: 10px;
+	height: 15px;
+	color: #787c82;
+	cursor: grab;
+	background: radial-gradient(circle, currentColor 1.4px, transparent 1.8px) 0 0 / 5px 5px;
+}
+
+.static-search-admin .static-search-sortable__label {
+	flex: 1;
+	min-width: 0;
+	font-weight: 500;
+	overflow-wrap: anywhere;
+}
+
+.static-search-admin .static-search-sortable__tie {
+	display: flex;
+	flex: none;
+	align-items: center;
+	gap: 4px;
+	margin: 0;
+	color: #646970;
+	font-size: 12px;
+	white-space: nowrap;
+}
+
+.static-search-admin .static-search-sortable__tie input {
+	margin: 0;
+}
+
+/* The first row has nothing above it; its space is kept so the arrows stay in one column. */
+.static-search-admin .static-search-sortable__item:first-child .static-search-sortable__tie {
+	visibility: hidden;
+}
+
+.static-search-admin .static-search-sortable__moves {
+	display: flex;
+	flex: none;
+	gap: 2px;
+}
+
+.static-search-admin .static-search-sortable__moves .button-link {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	padding: 0;
+	color: #50575e;
+	text-decoration: none;
+	background: none;
+	border: 0;
+	border-radius: 4px;
+	box-shadow: none;
+}
+
+.static-search-admin .static-search-sortable__moves .button-link:hover:not(:disabled),
+.static-search-admin .static-search-sortable__moves .button-link:focus-visible {
+	color: #2271b1;
+	background: #fff;
+}
+
+.static-search-admin .static-search-sortable__moves .button-link:disabled {
+	color: #c3c4c7;
+	cursor: default;
+}
+
+/* With no numbers, a row that shares its rank with the one above is drawn attached to it. */
+.static-search-admin .static-search-sortable__item.is-tied {
+	margin-top: -6px;
+	border-top-left-radius: 3px;
+	border-top-right-radius: 3px;
+	background: #f0f6fc;
+	border-color: #c5d9ed;
+}
+
+.static-search-admin .static-search-sortable__item:has( + .is-tied ) {
+	border-bottom-left-radius: 3px;
+	border-bottom-right-radius: 3px;
+}
+
+.static-search-admin .static-search-sortable__ghost {
+	background: #f0f6fc;
+	border: 1px dashed #2271b1;
+	opacity: 0.55;
+}
+
+.static-search-admin .static-search-sortable__chosen {
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+	cursor: grabbing;
+}
+
+.static-search-admin .static-search-sortable__chosen .static-search-sortable__handle {
+	cursor: grabbing;
+}
+
+/* Narrow screens: the "same priority" tick moves to its own line under the name. */
+@media (max-width: 600px) {
+	.static-search-admin .static-search-sortable__item {
+		flex-wrap: wrap;
+	}
+
+	.static-search-admin .static-search-sortable__moves {
+		margin-inline-start: auto;
+	}
+
+	.static-search-admin .static-search-sortable__tie {
+		flex-basis: 100%;
+		order: 5;
+		padding-inline-start: 22px;
+	}
+
+	.static-search-admin .static-search-sortable__item:first-child .static-search-sortable__tie {
+		display: none;
+	}
+}
+
+/* "Try it" box --------------------------------------------------------------- */
+
+.static-search-admin .static-search-preview input[type="search"] {
+	width: 100%;
+	max-width: 24rem;
+}
+
+.static-search-admin .static-search-preview table {
+	max-width: 46rem;
+	margin: 0.75rem 0;
+}
+
+.static-search-admin .static-search-preview table[hidden] {
+	display: none;
+}
+
+.static-search-admin .static-search-preview .column-rank {
+	width: 2.5rem;
+}
+
+.static-search-admin .static-search-preview th,
+.static-search-admin .static-search-preview td {
+	padding: 8px 10px;
+	vertical-align: middle;
+}
+
+/* Results page section ------------------------------------------------------- */
+
+/* Rows that only apply while "Activate" is ticked are dimmed when it is not. */
+.static-search-admin tr.is-off > th,
+.static-search-admin tr.is-off > td {
+	opacity: 0.5;
+}
+
+/* Select2 page picker, styled to sit with WordPress' own fields. */
+.static-search-admin .select2-container--default .select2-selection--single {
+	height: 32px;
+	border: 1px solid #8c8f94;
+	border-radius: 4px;
+}
+
+.static-search-admin .select2-container--default .select2-selection--single .select2-selection__rendered {
+	padding-inline: 8px 28px;
+	color: #2c3338;
+	line-height: 30px;
+}
+
+.static-search-admin .select2-container--default .select2-selection--single .select2-selection__arrow {
+	height: 30px;
+}
+
+.static-search-admin .select2-container--default.select2-container--focus .select2-selection--single,
+.static-search-admin .select2-container--default.select2-container--open .select2-selection--single {
+	border-color: #2271b1;
+	box-shadow: 0 0 0 1px #2271b1;
+}
+
+.static-search-admin .select2-container--default.select2-container--disabled .select2-selection--single {
+	background: #f0f0f1;
+	border-color: #dcdcde;
+	cursor: default;
+}

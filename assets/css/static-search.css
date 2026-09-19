@@ -1,0 +1,211 @@
+/*
+ * Static Search front end.
+ *
+ * Colours come from custom properties so a theme can restyle everything from one place:
+ *   :root { --static-search-bg: #fff; --static-search-fg: #212529; ... }
+ */
+
+:root {
+	--static-search-bg: #fff;
+	--static-search-fg: #212529;
+	--static-search-border: #e9ecef;
+	--static-search-hover: #f1f3f5;
+	--static-search-muted: #6c757d;
+	--static-search-shadow: 0 6px 24px rgba(0, 0, 0, 0.14);
+}
+
+[data-scheme="dark"] {
+	--static-search-bg: #2b2b2b;
+	--static-search-fg: #f1f1f1;
+	--static-search-border: #494949;
+	--static-search-hover: #3a3a3a;
+	--static-search-muted: #a0a0a0;
+	--static-search-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+}
+
+/* Dropdown ------------------------------------------------------------------ */
+
+.static-search-form {
+	position: relative;
+}
+
+.static-search-results {
+	position: absolute;
+	inset-inline: 0;
+	top: 100%;
+	z-index: 1000;
+	box-sizing: border-box;
+	max-height: min(70vh, 26rem);
+	overflow-y: auto;
+	margin-top: 4px;
+	background: var(--static-search-bg);
+	color: var(--static-search-fg);
+	border: 1px solid var(--static-search-border);
+	border-radius: 4px;
+	box-shadow: var(--static-search-shadow);
+	text-align: start;
+	font-size: 1rem;
+	line-height: 1.4;
+}
+
+.static-search-results[hidden],
+.static-search-list[hidden],
+.static-search-empty[hidden] {
+	display: none;
+}
+
+.static-search-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.static-search-result {
+	margin: 0;
+	padding: 0;
+}
+
+.static-search-result + .static-search-result {
+	border-top: 1px solid var(--static-search-border);
+}
+
+.static-search-result a {
+	display: flex;
+	align-items: center;
+	gap: 0.875rem;
+	padding: 0.75rem 1rem;
+	color: inherit;
+	text-decoration: none;
+}
+
+.static-search-result[aria-selected="true"] a,
+.static-search-result a:hover,
+.static-search-result a:focus-visible {
+	background: var(--static-search-hover);
+	outline: 0;
+}
+
+.static-search-result img {
+	flex: none;
+	width: 48px;
+	height: 48px;
+	object-fit: cover;
+	border-radius: 3px;
+}
+
+.static-search-result__body {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+}
+
+.static-search-result__title {
+	font-weight: 600;
+	overflow-wrap: anywhere;
+}
+
+.static-search-result__type {
+	margin-inline-start: auto;
+	padding-inline-start: 0.75rem;
+	color: var(--static-search-muted);
+	font-size: 0.8em;
+	white-space: nowrap;
+}
+
+.static-search-more a {
+	justify-content: center;
+	font-weight: 600;
+}
+
+.static-search-empty {
+	margin: 0;
+	padding: 1rem;
+	color: var(--static-search-muted);
+}
+
+.static-search-sr {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	padding: 0;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	white-space: nowrap;
+	border: 0;
+}
+
+/* Results page -------------------------------------------------------------- */
+
+.static-search-page__title {
+	margin-top: 0;
+}
+
+.static-search-page__status {
+	margin: 0 0 1.5rem;
+	color: var(--static-search-muted);
+}
+
+.static-search-page__list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.static-search-page__item {
+	display: flex;
+	gap: 1.25rem;
+	margin: 0;
+	padding: 1.25rem 0;
+	border-top: 1px solid var(--static-search-border);
+}
+
+.static-search-page__thumb {
+	flex: none;
+}
+
+.static-search-page__thumb img {
+	display: block;
+	width: 96px;
+	height: 96px;
+	object-fit: cover;
+	border-radius: 4px;
+}
+
+.static-search-page__body {
+	min-width: 0;
+}
+
+.static-search-page__heading {
+	margin: 0 0 0.25rem;
+	font-size: 1.125rem;
+}
+
+.static-search-page__type {
+	margin: 0 0 0.5rem;
+	color: var(--static-search-muted);
+	font-size: 0.85em;
+}
+
+.static-search-page__snippet {
+	margin: 0;
+}
+
+.static-search-page__more {
+	margin-top: 1.5rem;
+}
+
+.static-search-page__more[hidden] {
+	display: none;
+}
+
+@media (max-width: 600px) {
+	.static-search-result__type {
+		display: none;
+	}
+
+	.static-search-page__thumb img {
+		width: 64px;
+		height: 64px;
+	}
+}

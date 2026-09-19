@@ -1,0 +1,1 @@
+(()=>{function n(e,t,r){let o=e.indexOf("?")===-1?"?":"&";return e+o+"q="+encodeURIComponent(t)+(r?"&type="+encodeURIComponent(r):"")}function a(e,t){if(!e)return!1;let r=new URLSearchParams(t.search),o=(r.get("s")||"").trim();return!o||(r.get("q")||"").trim()?!1:(t.replace(n(e,o,r.get("post_type")||"")),!0)}a(window.StaticSearchForward,window.location);})();
