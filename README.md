@@ -8,17 +8,6 @@ Static Search adds instant, typo-tolerant search to WordPress that runs entirely
 - **Settings:** Settings → Static Search
 - **License:** GPL-2.0-or-later (bundles [Fuse.js](https://www.fusejs.io/) 7.5.0, Apache-2.0, and, on the settings screen only, [SortableJS](https://sortablejs.github.io/Sortable/) 1.15.7 and [Select2](https://select2.org/) 4.0.13, both MIT)
 
-## What visitors get
-
-- A dropdown under every standard search field (`input[type="search"][name="s"]`): the theme's header search, the Search widget, the Search block, 404 and "no results" forms.
-- Typo tolerance in titles, categories and SKUs ("cradel" finds "Cradle"). Excerpts and body text must match the word as typed, so results stay relevant.
-- Results are ranked by field, and you choose the order (see *Result ranking* below). By default: the word in the title, then in a category, tag or SKU, then in the excerpt, then in the body text. Within a field, whole words come before parts of words, and equal matches are newest first. To leave categories and tags out of the search altogether, untick "Categories, tags and other taxonomy terms" in the settings.
-- Every word must match, in any field ("baby oil" finds items with both).
-- Chinese and other languages without spaces work; a single character is enough.
-- Keyboard and screen-reader support (combobox pattern; arrow keys, Enter, Escape).
-- Pressing Enter goes to a results page (`/search/?q=…`) built from the same index, unless you switch that off under *Results page → Activate*: then Enter does nothing and visitors use the dropdown.
-- Old-style search addresses (`/?s=term`) that a static site can't answer are forwarded to that results page (see *Old search addresses* below).
-
 ## Install
 
 1. Copy this folder to `wp-content/plugins/subsite-static-search/` (the built script `assets/js/static-search.js` is included, so Node is not needed).
@@ -55,33 +44,6 @@ Under the hood each row saves a rank number (`ranking[field]`, `type_priority[ty
 
 To hide a single item, tick **Hide this item from search** in the *Static Search* box on its edit screen. Hidden items are labelled in the Posts / Pages / Products lists and listed on the settings screen. Password-protected posts are indexed by title only.
 
-## How the index stays current
-
-The index (`wp-content/uploads/static-search/index.json`) is rebuilt:
-
-- shortly after content is published, changed, unpublished or deleted (debounced, via WP-Cron);
-- when the settings are saved;
-- at the start of every Simply Static export, if Simply Static is installed;
-- on demand: **Rebuild index now**, or `wp static-search rebuild`.
-
-## Static export
-
-The index is an ordinary file in the uploads folder and the results page is an ordinary page, so an exporter that copies uploads and crawls pages carries both across. With the free Simply Static nothing needs configuring: its uploads crawler includes `.json` files, and the plugin also adds the file to Simply Static's extra-files list. All addresses in the index and in the script settings are root-relative, so they stay valid on whatever host the export is served from, as long as it is served at the same path as the site (the site root, normally).
-
-With another exporter, make sure `wp-content/uploads/static-search/index.json` and the results page are included, and run `wp static-search rebuild` before exporting.
-
-### Turning the results page off
-
-With **Results page → Activate** unticked the plugin never sends anyone to a results page: Enter (and any Search button) does nothing, the "View all N results" link is not shown, and old `/?s=term` addresses are not forwarded (there is nowhere to send them). Search then works entirely through the dropdown, so consider raising *Results in the dropdown* under Search box. If it is ticked but no results page exists (deleted, unpublished, or "None" chosen), Enter is left to the browser and a warning is shown on the settings screen.
-
-### Old search addresses
-
-A live WordPress site answers `/?s=term` with its own results page. A static host can't: it serves the plain page and ignores the query, so a bookmark or another site's link to `/?s=term` would land on the homepage. With **Old search addresses** on (the default), the plugin prints a 362-byte script at the top of every page's `<head>` that forwards such an address to the results page, keeping a post type restriction (`/shop/?s=tea&post_type=product` goes to `/search/?q=tea&type=product`). It uses `location.replace`, so the old address doesn't stay in the Back button's history, and it works even if the main search script fails to load.
-
-The script is left out of pages WordPress renders as search results, so on a live site WordPress' own results page for `/?s=term` is untouched. It only acts when `s` has a term and `q` is absent, so it can't loop. Not covered: WordPress' other pretty search address, `/search/term/`, which a static host answers with a 404.
-
-Pretty permalinks must be on: the results page lives at `/search/`.
-
 ## For developers
 
 **Filters**
@@ -101,21 +63,6 @@ Pretty permalinks must be on: the results page lives at `/search/`.
 **Styling** — colours come from CSS custom properties (`--static-search-bg`, `--static-search-fg`, `--static-search-border`, `--static-search-hover`, `--static-search-muted`, `--static-search-shadow`); a `[data-scheme="dark"]` variant is included.
 
 **SEO** — the results page is set to `noindex` through WordPress' robots filter and All in One SEO's. Other SEO plugins that print their own robots tag need the results page set to noindex in their settings.
-
-## Development
-
-```
-npm install
-npm run build   # bundles src/ + Fuse.js into assets/js/static-search.js
-npm test        # unit tests (matching) and DOM tests (dropdown, results page)
-wp eval-file wp-content/plugins/subsite-static-search/tests/smoke.php   # index builder against the real site
-```
-
-`src/core.js` holds the matching and ranking logic, `src/frontend.js` the dropdown and results page, `src/admin.js` the settings screen's "Try it" box, `src/rank-lists.js` its drag-and-drop lists, and `src/forward.js` (built into the tiny inline `assets/js/static-search-forward.js`) the old-address forwarding. Commit the rebuilt `assets/js/static-search.js` with any change to `src/`.
-
-Select2 is vendored into `assets/vendor/select2/` by `npm run build` (WordPress core does not ship it) and loaded, with jQuery, on the settings screen only.
-
-When copying the plugin to a server, leave out `node_modules`, `src`, `tests`, `package*.json` and `build.mjs`.
 
 ## Changelog
 
