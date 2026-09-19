@@ -11,6 +11,7 @@
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       subsite-static-search
  * Domain Path:       /languages
+ * Troy:              https://node.subsite.dev
  * @package SubsiteStaticSearch
  */
 
