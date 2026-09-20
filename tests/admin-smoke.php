@@ -53,6 +53,7 @@ $check( false !== strpos( $html, 'Result ranking' ) && false !== strpos( $html, 
 $check( false !== strpos( $html, 'name="static_search_settings[type_priority][' ) && false !== strpos( $html, 'name="static_search_settings[type_mode]"' ), 'has the post type priority controls' );
 $check( false !== strpos( $html, 'data-preview-input' ), 'has the "Try it" box' );
 $check( false !== strpos( $html, 'name="static_search_settings[forward_old_search]"' ), 'has the old search address option' );
+$check( false !== strpos( $html, 'name="static_search_settings[highlight]"' ) && false !== strpos( $html, 'name="static_search_settings[snippets]"' ), 'has the highlight and snippet options' );
 $check( false !== strpos( $html, 'name="static_search_settings[results_enabled]"' ) && 3 === substr_count( $html, 'data-results-dependent' ), 'has the Activate switch, and marks the three settings that depend on it' );
 $check( substr_count( $html, 'data-rank-list' ) >= 2, 'field and post type priorities are drag-and-drop lists' );
 $check( false !== strpos( $html, 'static-search-sortable__item is-tied' ), 'rows that share a rank start tied (Categories and SKU by default)' );
@@ -138,6 +139,23 @@ $config = SubsiteStaticSearch\Frontend::config();
 $check( isset( $config['rank']['title'], $config['typeMode'] ) && is_array( $config['typeRank'] ) && in_array( 'title', $config['fields'], true ), 'the script receives the ranking settings' );
 $preview = Admin::preview_config();
 $check( isset( $preview['indexUrl'], $preview['labels']['terms'], $preview['i18n']['showing'], $preview['i18n']['moved'] ), 'the settings script receives its text' );
+
+// Highlighting and text snippets: on by default, switched off one at a time, and passed to the script.
+$check( true === Settings::defaults()['highlight'] && true === Settings::defaults()['snippets'], 'highlighting and snippets are on by default' );
+add_filter( 'pre_option_' . Settings::OPTION, static fn() => array(), 10, 0 );
+$one_off  = Settings::sanitize( array( 'highlight' => '0' ) );
+$both_off = Settings::sanitize( array( 'highlight' => '0', 'snippets' => '0' ) );
+$both_on  = Settings::sanitize( array( 'highlight' => '1', 'snippets' => '1' ) );
+remove_all_filters( 'pre_option_' . Settings::OPTION );
+$check( false === $one_off['highlight'] && true === $one_off['snippets'], 'switching highlighting off leaves the snippet on' );
+$check( false === $both_off['highlight'] && false === $both_off['snippets'], 'both can be switched off' );
+$check( true === $both_on['highlight'] && true === $both_on['snippets'], 'and back on' );
+$force = static fn( array $settings ): array => array_merge( $settings, array( 'highlight' => false, 'snippets' => false ) );
+add_filter( 'static_search_settings', $force );
+$forced = SubsiteStaticSearch\Frontend::config();
+remove_filter( 'static_search_settings', $force );
+$check( false === $forced['highlight'] && false === $forced['snippets'], 'the script is told when they are off' );
+$check( is_bool( $config['highlight'] ) && is_bool( $config['snippets'] ), 'and gets both values otherwise' );
 
 $many_types = Settings::sanitize( array( 'type_priority' => array( 'product' => '50' ) ) );
 $check( 50 === $many_types['type_priority']['product'], 'post type priority allows a long list of types' );

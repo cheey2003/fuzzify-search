@@ -403,6 +403,14 @@ final class Admin {
 					<th scope="row"><?php esc_html_e( 'Thumbnails', 'subsite-static-search' ); ?></th>
 					<td><?php self::checkbox( $name . '[show_thumbs]', (bool) $settings['show_thumbs'], __( 'Show a thumbnail next to each result', 'subsite-static-search' ) ); ?></td>
 				</tr>
+				<tr>
+					<th scope="row"><?php esc_html_e( 'Matches', 'subsite-static-search' ); ?></th>
+					<td>
+						<?php self::checkbox( $name . '[highlight]', (bool) $settings['highlight'], __( 'Highlight the words that matched', 'subsite-static-search' ) ); ?><br>
+						<?php self::checkbox( $name . '[snippets]', (bool) $settings['snippets'], __( 'Show a piece of the text around the match', 'subsite-static-search' ) ); ?>
+						<p class="description"><?php esc_html_e( 'The text is shown under a result when the words were found in its excerpt or body text rather than its title, so those fields need to be searched (Fields to search). A word matched with a typo is not highlighted.', 'subsite-static-search' ); ?></p>
+					</td>
+				</tr>
 			</table>
 
 			<h2><?php esc_html_e( 'Results page', 'subsite-static-search' ); ?></h2>

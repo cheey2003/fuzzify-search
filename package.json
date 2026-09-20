@@ -1,6 +1,6 @@
 {
   "name": "subsite-static-search",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Static Search: browser-side Fuse.js search that works on a live WordPress site and in static HTML exports.",
   "license": "GPL-2.0-or-later",

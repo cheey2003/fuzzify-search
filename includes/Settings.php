@@ -40,6 +40,8 @@ final class Settings {
 			'max_results'      => 7,
 			'threshold'        => 0.3,
 			'show_thumbs'      => true,
+			'highlight'        => true,
+			'snippets'         => true,
 			'results_enabled'  => true,
 			'results_page'     => 0,
 			'results_per_page' => 20,
@@ -159,7 +161,7 @@ final class Settings {
 		$out['max_results']      = self::int_in( $input, 'max_results', 1, 20, (int) $out['max_results'] );
 		$out['results_per_page'] = self::int_in( $input, 'results_per_page', 5, 100, (int) $out['results_per_page'] );
 
-		foreach ( array( 'skip_woo_pages', 'show_thumbs', 'rebuild_on_save', 'forward_old_search', 'results_enabled' ) as $key ) {
+		foreach ( array( 'skip_woo_pages', 'show_thumbs', 'highlight', 'snippets', 'rebuild_on_save', 'forward_old_search', 'results_enabled' ) as $key ) {
 			if ( array_key_exists( $key, $input ) ) {
 				$out[ $key ] = (bool) (int) $input[ $key ];
 			}

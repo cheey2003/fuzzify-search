@@ -266,6 +266,111 @@ test( 'results page: with no query it prompts; with an odd query it does not bre
 	assert.equal( odd.document.querySelectorAll( 'img[onerror]' ).length, 0, 'query is text, never markup' );
 } );
 
+// Highlighting and text snippets ------------------------------------------------------------
+
+const MATCH_INDEX = {
+	v: 1,
+	items: [
+		{ id: 1, title: 'Hello world!', url: '/hello/', type: 'Post', pt: 'post', content: 'Welcome to WordPress. This is your first post.' },
+		{ id: 2, title: 'Consult AI Home', url: '/consult/', type: 'Page', pt: 'page', content: 'We are a company of the future, working to improve in order to create better world for the generations to come, and we always want to learn more.' },
+		{ id: 3, title: '<img src=x onerror=alert(1)> Oops', url: '/oops/', type: 'Post', pt: 'post', content: 'Hostile <script>alert(1)</script> text with a world in it, and <b>bold</b> markup that must stay text.' },
+	],
+};
+const withIndex = ( index, config = {} ) => ( { fetchImpl: () => Promise.resolve( { ok: true, json: () => Promise.resolve( index ) } ), config } );
+const marksIn = ( node ) => [ ...node.querySelectorAll( 'mark.static-search-mark' ) ].map( ( m ) => m.textContent );
+const rowsOf = ( document ) => [ ...document.querySelectorAll( '.static-search-list .static-search-result' ) ];
+
+test( 'a match in the title marks the typed letters and shows no snippet', async () => {
+	const { document, type } = await page( withIndex( MATCH_INDEX ) );
+	await type( 'world' );
+	const first = rowsOf( document )[ 0 ];
+	assert.deepEqual( marksIn( first.querySelector( '.static-search-result__title' ) ), [ 'world' ] );
+	assert.equal( first.querySelector( '.static-search-result__title' ).textContent, 'Hello world!', 'the title text is unchanged' );
+	assert.equal( first.querySelector( '.static-search-result__snippet' ), null, 'matched in the title: nothing under it' );
+} );
+
+test( 'a match in the body shows the text around it, with the match marked', async () => {
+	const { document, type } = await page( withIndex( MATCH_INDEX ) );
+	await type( 'world' );
+	const snippet = rowsOf( document )[ 1 ].querySelector( '.static-search-result__snippet' );
+	assert.ok( snippet );
+	assert.match( snippet.textContent, /better world for the/ );
+	assert.ok( snippet.textContent.startsWith( '…' ), 'the start of the text is cut' );
+	assert.deepEqual( marksIn( snippet ), [ 'world' ] );
+	assert.equal( rowsOf( document )[ 1 ].querySelector( '.static-search-result__title' ).querySelector( 'mark' ), null, 'no match in that title, no mark' );
+} );
+
+test( 'with several words, each is marked where it is found', async () => {
+	const { document, type } = await page( withIndex( MATCH_INDEX ) );
+	await type( 'consult better' );
+	const row = rowsOf( document )[ 0 ];
+	assert.deepEqual( marksIn( row.querySelector( '.static-search-result__title' ) ), [ 'Consult' ] );
+	assert.deepEqual( marksIn( row.querySelector( '.static-search-result__snippet' ) ), [ 'better' ] );
+} );
+
+test( 'a screen reader gets title and type as the name and the snippet as the description', async () => {
+	const { document, type } = await page( withIndex( MATCH_INDEX ) );
+	await type( 'world' );
+	const [ titleOnly, bodyMatch ] = rowsOf( document );
+	const name = ( row ) => row.getAttribute( 'aria-labelledby' ).split( ' ' ).map( ( id ) => document.getElementById( id ).textContent );
+	assert.deepEqual( name( bodyMatch ), [ 'Consult AI Home', 'Page' ] );
+	assert.deepEqual( name( titleOnly ), [ 'Hello world!', 'Post' ] );
+	assert.match( document.getElementById( bodyMatch.getAttribute( 'aria-describedby' ) ).textContent, /better world/ );
+	assert.equal( titleOnly.getAttribute( 'aria-describedby' ), null, 'no snippet, no description' );
+} );
+
+test( 'markup in a title or in the text stays text', async () => {
+	const { document, type } = await page( withIndex( MATCH_INDEX ) );
+	await type( 'world' );
+	const hostile = rowsOf( document )[ 2 ];
+	assert.equal( hostile.querySelector( '.static-search-result__title' ).textContent, '<img src=x onerror=alert(1)> Oops' );
+	assert.equal( hostile.querySelectorAll( 'img, script, b' ).length, 0, 'nothing was turned into an element' );
+	assert.match( hostile.querySelector( '.static-search-result__snippet' ).textContent, /with a world in it/ );
+	await type( 'oops' );
+	assert.equal( document.querySelectorAll( 'img[onerror]' ).length, 0 );
+} );
+
+test( 'the two settings can be switched off separately, and are on when the page never heard of them', async () => {
+	const noMarks = await page( withIndex( MATCH_INDEX, { highlight: false } ) );
+	await noMarks.type( 'world' );
+	assert.equal( noMarks.document.querySelectorAll( 'mark' ).length, 0, 'no highlighting' );
+	assert.ok( noMarks.document.querySelector( '.static-search-result__snippet' ), 'the snippet is still there' );
+
+	const noSnippets = await page( withIndex( MATCH_INDEX, { snippets: false } ) );
+	await noSnippets.type( 'world' );
+	assert.equal( noSnippets.document.querySelectorAll( '.static-search-result__snippet' ).length, 0, 'no snippet' );
+	assert.ok( noSnippets.document.querySelector( '.static-search-result__title mark' ), 'the title is still highlighted' );
+
+	const neither = await page( withIndex( MATCH_INDEX, { highlight: false, snippets: false } ) );
+	await neither.type( 'world' );
+	assert.equal( neither.document.querySelectorAll( 'mark, .static-search-result__snippet' ).length, 0 );
+
+	const explicit = await page( withIndex( MATCH_INDEX, { highlight: true, snippets: true } ) );
+	await explicit.type( 'world' );
+	assert.ok( explicit.document.querySelector( 'mark' ) && explicit.document.querySelector( '.static-search-result__snippet' ) );
+} );
+
+test( 'results page: marks the words, shows the text around a body match, else the start of the text', async () => {
+	const { document, wait } = await page( { html: RESULTS, url: 'https://example.test/search/?q=world', ...withIndex( MATCH_INDEX ) } );
+	await wait( 100 );
+	const items = [ ...document.querySelectorAll( '.static-search-page__item' ) ];
+	assert.equal( items.length, 3 );
+	assert.deepEqual( marksIn( items[ 0 ].querySelector( '.static-search-page__heading a' ) ), [ 'world' ] );
+	assert.equal( items[ 0 ].querySelector( '.static-search-page__heading a' ).textContent, 'Hello world!' );
+	assert.match( items[ 0 ].querySelector( '.static-search-page__snippet' ).textContent, /^Welcome to WordPress/, 'a title match shows the start of the text' );
+	assert.match( items[ 1 ].querySelector( '.static-search-page__snippet' ).textContent, /better world for the generations/ );
+	assert.deepEqual( marksIn( items[ 1 ].querySelector( '.static-search-page__snippet' ) ), [ 'world' ] );
+	assert.equal( items[ 2 ].querySelectorAll( 'img, script, b' ).length, 0, 'markup stays text' );
+} );
+
+test( 'results page: with the settings off it shows the start of the text, unmarked, as before', async () => {
+	const { document, wait } = await page( { html: RESULTS, url: 'https://example.test/search/?q=world', ...withIndex( MATCH_INDEX, { highlight: false, snippets: false } ) } );
+	await wait( 100 );
+	const items = [ ...document.querySelectorAll( '.static-search-page__item' ) ];
+	assert.equal( document.querySelectorAll( 'mark' ).length, 0 );
+	assert.match( items[ 1 ].querySelector( '.static-search-page__snippet' ).textContent, /^We are a company of the future/ );
+} );
+
 test( 'a missing thumbnail leaves no broken image behind', async () => {
 	const { window, document, type } = await page();
 	await type( 'carrot' );

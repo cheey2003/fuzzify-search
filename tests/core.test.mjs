@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { tokenize, createEngine, snippet, resultsHref, format } from '../src/core.js';
+import { tokenize, createEngine, snippet, highlightRanges, contextSnippet, resultsHref, format } from '../src/core.js';
 
 const items = [
 	{ title: 'Why Not? Cradle Carrot Puree, 130g', url: '/p/carrot/', type: 'Product', pt: 'product', excerpt: '', terms: [ 'Baby food' ] },
@@ -178,6 +178,103 @@ test( 'snippet prefers the excerpt, cuts on a word, and adds an ellipsis', () =>
 	assert.equal( snippet( { content: 'word '.repeat( 60 ) }, 50 ).endsWith( '…' ), true );
 	assert.equal( snippet( { content: 'word '.repeat( 60 ) }, 50 ).includes( 'wor…' ), false );
 	assert.equal( snippet( {} ), '' );
+} );
+
+/** The pieces of a text that a list of [start, end) ranges covers. */
+const marked = ( text, ranges ) => ranges.map( ( [ a, b ] ) => text.slice( a, b ) );
+
+test( 'highlightRanges finds every occurrence, ignoring case', () => {
+	assert.deepEqual( marked( 'Hello world! A World apart', highlightRanges( 'Hello world! A World apart', [ 'world' ] ) ), [ 'world', 'World' ] );
+	assert.deepEqual( highlightRanges( 'Hello world!', [ 'world' ] ), [ [ 6, 11 ] ], 'the "!" is not part of the match' );
+	assert.deepEqual( highlightRanges( 'Hello world!', [ 'zzz' ] ), [] );
+	assert.deepEqual( highlightRanges( '', [ 'a' ] ), [] );
+	assert.deepEqual( highlightRanges( 'text', [] ), [] );
+} );
+
+test( 'highlightRanges marks the letters typed, even inside a longer word', () => {
+	assert.deepEqual( marked( 'Worldwide', highlightRanges( 'Worldwide', [ 'wor' ] ) ), [ 'Wor' ] );
+} );
+
+test( 'highlightRanges merges words that overlap or touch', () => {
+	assert.deepEqual( highlightRanges( 'worldwide', [ 'world', 'ldwi' ] ), [ [ 0, 7 ] ] );
+	assert.deepEqual( highlightRanges( 'worldwide', [ 'wor', 'ld' ] ), [ [ 0, 5 ] ] );
+	assert.deepEqual( highlightRanges( 'a b a', [ 'a', 'b' ] ), [ [ 0, 1 ], [ 2, 3 ], [ 4, 5 ] ] );
+} );
+
+test( 'highlightRanges takes regular-expression characters literally', () => {
+	assert.deepEqual( marked( 'costs $5 (approx.) [ok]', highlightRanges( 'costs $5 (approx.) [ok]', [ '$5', '(approx.)', '[ok]' ] ) ), [ '$5', '(approx.)', '[ok]' ] );
+	assert.deepEqual( highlightRanges( 'abc', [ '.' ] ), [] );
+} );
+
+test( 'highlightRanges keeps positions right for the Turkish dotted capital I and for Chinese', () => {
+	const turkish = 'İstanbul rehberi';
+	assert.deepEqual( marked( turkish, highlightRanges( turkish, [ 'rehber' ] ) ), [ 'rehber' ] );
+	assert.deepEqual( marked( turkish, highlightRanges( turkish, [ 'stanbul' ] ) ), [ 'stanbul' ] );
+	assert.deepEqual( marked( '孩子发烧时不要慌张', highlightRanges( '孩子发烧时不要慌张', [ '发烧' ] ) ), [ '发烧' ] );
+} );
+
+const LONG = 'Babies grow fast in the first year and every family finds its own routine. ' +
+	'To improve in order to create better world for the generations that follow, start small and be kind to yourself. ' +
+	'Sleep, feeding and play all change week by week, so keep notes and ask for help when you need it.';
+
+test( 'contextSnippet shows the text around a match in the body, with the match marked', () => {
+	const found = contextSnippet( { content: LONG }, [ 'world' ], [ 'content' ], 60 );
+	assert.ok( found );
+	assert.ok( found.text.startsWith( '…' ) && found.text.endsWith( '…' ), 'both ends are cut' );
+	assert.ok( found.text.length <= 60 + 2 + 24, 'about the requested size' );
+	assert.deepEqual( marked( found.text, found.ranges ), [ 'world' ] );
+	assert.match( found.text, /better world for/ );
+} );
+
+test( 'contextSnippet cuts on whole words', () => {
+	const found = contextSnippet( { content: LONG }, [ 'world' ], [ 'content' ], 60 );
+	const words = found.text.replace( /…/g, '' ).split( ' ' );
+	words.forEach( ( word ) => assert.ok( LONG.split( /\s+/ ).some( ( w ) => w.includes( word ) && w === word.replace( /[.,]$/, '' ) + ( w.endsWith( ',' ) || w.endsWith( '.' ) ? w.slice( -1 ) : '' ) || w === word ), `"${ word }" is a whole word` ) );
+} );
+
+test( 'contextSnippet has no leading "…" at the start of the text and no trailing one at the end', () => {
+	const start = contextSnippet( { content: 'World peace starts at home and it is worth the trouble to talk about it every single day of the year.' }, [ 'world' ], [ 'content' ], 40 );
+	assert.ok( ! start.text.startsWith( '…' ) && start.text.endsWith( '…' ) );
+	assert.deepEqual( start.ranges[ 0 ], [ 0, 5 ] );
+	const end = contextSnippet( { content: 'Talking about it every single day is how the whole family learned to love the world' }, [ 'world' ], [ 'content' ], 40 );
+	assert.ok( end.text.startsWith( '…' ) && ! end.text.endsWith( '…' ) );
+	assert.equal( marked( end.text, end.ranges )[ 0 ], 'world' );
+	const whole = contextSnippet( { content: 'A small world.' }, [ 'world' ], [ 'content' ] );
+	assert.equal( whole.text, 'A small world.' );
+} );
+
+test( 'contextSnippet is only for text the search matched on', () => {
+	assert.equal( contextSnippet( { title: 'Hello world!', content: LONG }, [ 'world' ], [ 'title' ] ), null, 'a title match gets none' );
+	assert.equal( contextSnippet( { title: 'x' }, [ 'world' ], [ 'content' ] ), null, 'no body in the index' );
+	assert.equal( contextSnippet( { content: 'nothing here' }, [ 'world' ], [ 'content' ] ), null, 'words not in the text' );
+	assert.equal( contextSnippet( { content: LONG }, [ 'world' ], undefined ), null );
+} );
+
+test( 'contextSnippet prefers the excerpt when both matched, and falls back to the body', () => {
+	assert.match( contextSnippet( { excerpt: 'A short world tour.', content: 'the world in the body' }, [ 'world' ], [ 'excerpt', 'content' ] ).text, /short world tour/ );
+	assert.match( contextSnippet( { excerpt: '', content: 'the world in the body' }, [ 'world' ], [ 'excerpt', 'content' ] ).text, /world in the body/ );
+} );
+
+test( 'contextSnippet picks the window that holds the most of the words', () => {
+	const text = 'Iron is mentioned here at the very start. ' + 'filler '.repeat( 30 ) + 'Later on, iron rich foods and vitamin C are described together in one sentence. ' + 'filler '.repeat( 30 );
+	const found = contextSnippet( { content: text }, [ 'iron', 'vitamin' ], [ 'content' ], 90 );
+	assert.deepEqual( marked( found.text, found.ranges ).map( ( w ) => w.toLowerCase() ), [ 'iron', 'vitamin' ] );
+} );
+
+test( 'contextSnippet works for Chinese, which has no spaces', () => {
+	const text = '孩子发烧时不要慌张，先测量体温，多喝水，注意休息，如果持续三天以上请及时就医，并记录每天的体温变化情况。';
+	const found = contextSnippet( { content: text }, [ '就医' ], [ 'content' ], 16 );
+	assert.deepEqual( marked( found.text, found.ranges ), [ '就医' ] );
+	assert.ok( found.text.startsWith( '…' ) && found.text.endsWith( '…' ) );
+} );
+
+test( 'contextSnippet does not split an emoji and never cuts a very long word', () => {
+	const emoji = 'x '.repeat( 20 ) + '😀'.repeat( 10 ) + ' world ' + '😀'.repeat( 10 ) + ' y'.repeat( 20 );
+	const found = contextSnippet( { content: emoji }, [ 'world' ], [ 'content' ], 24 );
+	assert.ok( ! /[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/.test( found.text ), 'no half of a surrogate pair' );
+	const url = 'see https://example.test/' + 'a'.repeat( 90 ) + 'world' + 'b'.repeat( 90 ) + ' for more';
+	const long = contextSnippet( { content: url }, [ 'world' ], [ 'content' ], 30 );
+	assert.deepEqual( marked( long.text, long.ranges ), [ 'world' ] );
 } );
 
 test( 'resultsHref builds the results address', () => {

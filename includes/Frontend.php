@@ -80,6 +80,8 @@ final class Frontend {
 			'maxResults' => (int) $settings['max_results'],
 			'perPage'    => (int) $settings['results_per_page'],
 			'thumbs'     => (bool) $settings['show_thumbs'],
+			'highlight'  => (bool) $settings['highlight'],
+			'snippets'   => (bool) $settings['snippets'],
 			'rank'       => (array) $settings['ranking'],
 			'typeRank'   => (array) $settings['type_priority'],
 			'typeMode'   => (string) $settings['type_mode'],

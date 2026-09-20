@@ -11,6 +11,7 @@
 	--static-search-border: #e9ecef;
 	--static-search-hover: #f1f3f5;
 	--static-search-muted: #6c757d;
+	--static-search-mark: #1a7f37;
 	--static-search-shadow: 0 6px 24px rgba(0, 0, 0, 0.14);
 }
 
@@ -20,6 +21,7 @@
 	--static-search-border: #494949;
 	--static-search-hover: #3a3a3a;
 	--static-search-muted: #a0a0a0;
+	--static-search-mark: #4ade80;
 	--static-search-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
 }
 
@@ -102,6 +104,28 @@
 .static-search-result__title {
 	font-weight: 600;
 	overflow-wrap: anywhere;
+}
+
+/* The words that matched. Themes often restyle <mark> (a yellow background, capitals, padding), so start from the surrounding text. */
+.static-search-results .static-search-mark,
+.static-search-page .static-search-mark {
+	all: unset;
+	color: var(--static-search-mark);
+	font-weight: 700;
+}
+
+/* Where the words were found in the text, at most two lines. */
+.static-search-result__snippet {
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+	line-clamp: 2;
+	margin-top: 0.125rem;
+	overflow: hidden;
+	overflow-wrap: anywhere;
+	font-size: 0.8em;
+	font-weight: 400;
+	line-height: 1.35;
 }
 
 .static-search-result__type {

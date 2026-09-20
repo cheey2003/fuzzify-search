@@ -4,7 +4,7 @@
  * Everything runs in the browser against one static JSON file, so it behaves the same on
  * the live WordPress site and in a static HTML export.
  */
-import { createEngine, format, resultsHref, snippet } from './core.js';
+import { createEngine, format, resultsHref, snippet, tokenize, highlightRanges, contextSnippet } from './core.js';
 
 ( function () {
 	'use strict';
@@ -15,6 +15,9 @@ import { createEngine, format, resultsHref, snippet } from './core.js';
 	}
 	const i18n = cfg.i18n || {};
 	const FLAG = 'staticSearch';
+	// On unless switched off; a page cached before these settings existed has neither key.
+	const marks = cfg.highlight !== false;
+	const snippets = cfg.snippets !== false;
 
 	let enginePromise = null;
 	let uid = 0;
@@ -53,6 +56,29 @@ import { createEngine, format, resultsHref, snippet } from './core.js';
 		}
 		if ( text !== undefined ) {
 			node.textContent = text;
+		}
+		return node;
+	}
+
+	/**
+	 * Put `text` in `node`, wrapping each [start, end) range in a <mark>. It goes in as text, never as HTML.
+	 *
+	 * @param {Element}    node   Target.
+	 * @param {string}     text   Text.
+	 * @param {number[][]} ranges Spans to mark, sorted and not overlapping.
+	 * @return {Element} The node.
+	 */
+	function fill( node, text, ranges ) {
+		let at = 0;
+		( ranges || [] ).forEach( ( [ from, to ] ) => {
+			if ( from > at ) {
+				node.append( document.createTextNode( text.slice( at, from ) ) );
+			}
+			node.append( el( 'mark', 'static-search-mark', text.slice( from, to ) ) );
+			at = to;
+		} );
+		if ( at < text.length ) {
+			node.append( document.createTextNode( text.slice( at ) ) );
 		}
 		return node;
 	}
@@ -190,7 +216,8 @@ import { createEngine, format, resultsHref, snippet } from './core.js';
 			this.list.textContent = '';
 			this.input.removeAttribute( 'aria-activedescendant' );
 
-			shown.forEach( ( hit, index ) => this.list.append( this.option( hit.item, index ) ) );
+			const tokens = tokenize( query );
+			shown.forEach( ( hit, index ) => this.list.append( this.option( hit, index, tokens ) ) );
 
 			if ( hits.length > shown.length && cfg.resultsUrl ) {
 				const li = el( 'li', 'static-search-result static-search-more' );
@@ -221,7 +248,8 @@ import { createEngine, format, resultsHref, snippet } from './core.js';
 			this.open();
 		}
 
-		option( item, index ) {
+		option( hit, index, tokens ) {
+			const item = hit.item;
 			const li = el( 'li', 'static-search-result' );
 			li.id = this.id + '-opt-' + index;
 			li.setAttribute( 'role', 'option' );
@@ -235,11 +263,28 @@ import { createEngine, format, resultsHref, snippet } from './core.js';
 				a.append( thumb( item, 48 ) );
 			}
 			const body = el( 'span', 'static-search-result__body' );
-			body.append( el( 'span', 'static-search-result__title', item.title ) );
+			const title = fill( el( 'span', 'static-search-result__title' ), item.title, marks ? highlightRanges( item.title, tokens ) : [] );
+			title.id = li.id + '-title';
+			body.append( title );
+			const labelled = [ title.id ];
+
+			// Where the words were found in the text, when that is not the title. A screen reader says the
+			// title and type as the name, as before, and reads the snippet as the description.
+			const found = snippets ? contextSnippet( item, tokens, hit.matched, 110 ) : null;
+			if ( found ) {
+				const preview = fill( el( 'span', 'static-search-result__snippet' ), found.text, marks ? found.ranges : [] );
+				preview.id = li.id + '-snippet';
+				body.append( preview );
+				li.setAttribute( 'aria-describedby', preview.id );
+			}
 			a.append( body );
 			if ( item.type ) {
-				a.append( el( 'small', 'static-search-result__type', item.type ) );
+				const type = el( 'small', 'static-search-result__type', item.type );
+				type.id = li.id + '-type';
+				a.append( type );
+				labelled.push( type.id );
 			}
+			li.setAttribute( 'aria-labelledby', labelled.join( ' ' ) );
 			li.append( a );
 			return li;
 		}
@@ -387,9 +432,21 @@ import { createEngine, format, resultsHref, snippet } from './core.js';
 		loadEngine()
 			.then( ( engine ) => {
 				const hits = engine.search( query, { type } );
+				const tokens = tokenize( query );
 				let shown = 0;
 
-				const item = ( entry ) => {
+				/** The text under a result: around the match when it was found in the text, else the start of it. */
+				const preview = ( hit ) => {
+					const context = snippets ? contextSnippet( hit.item, tokens, hit.matched, 200 ) : null;
+					if ( context ) {
+						return context;
+					}
+					const text = snippet( hit.item );
+					return text ? { text, ranges: highlightRanges( text, tokens ) } : null;
+				};
+
+				const item = ( hit ) => {
+					const entry = hit.item;
 					const li = el( 'li', 'static-search-page__item' );
 					if ( cfg.thumbs && entry.thumb ) {
 						const media = el( 'a', 'static-search-page__thumb' );
@@ -401,23 +458,23 @@ import { createEngine, format, resultsHref, snippet } from './core.js';
 					}
 					const body = el( 'div', 'static-search-page__body' );
 					const heading = el( 'h3', 'static-search-page__heading' );
-					const link = el( 'a', '', entry.title );
+					const link = fill( el( 'a' ), entry.title, marks ? highlightRanges( entry.title, tokens ) : [] );
 					link.href = entry.url;
 					heading.append( link );
 					body.append( heading );
 					if ( entry.type ) {
 						body.append( el( 'p', 'static-search-page__type', entry.type ) );
 					}
-					const text = snippet( entry );
+					const text = preview( hit );
 					if ( text ) {
-						body.append( el( 'p', 'static-search-page__snippet', text ) );
+						body.append( fill( el( 'p', 'static-search-page__snippet' ), text.text, marks ? text.ranges : [] ) );
 					}
 					li.append( body );
 					return li;
 				};
 
 				const showMore = () => {
-					hits.slice( shown, shown + cfg.perPage ).forEach( ( hit ) => list.append( item( hit.item ) ) );
+					hits.slice( shown, shown + cfg.perPage ).forEach( ( hit ) => list.append( item( hit ) ) );
 					shown = Math.min( hits.length, shown + cfg.perPage );
 					more.hidden = shown >= hits.length;
 				};

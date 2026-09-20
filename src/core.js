@@ -206,6 +206,148 @@ export function snippet( item, max = 160 ) {
 	return ( space > max * 0.6 ? cut.slice( 0, space ) : cut ).replace( /[\s,.;:!?\-]+$/, '' ) + '\u2026';
 }
 
+/**
+ * Lower-case a text without changing its length, so a position in the result is a position in the
+ * original. (The Turkish dotted capital İ would otherwise lower to two code units.)
+ *
+ * @param {string} text Text.
+ * @return {string} Folded text.
+ */
+const fold = ( text ) => String( text || '' ).replace( /İ/g, 'i' ).toLowerCase();
+
+/**
+ * Where the query words occur in a text: sorted, non-overlapping [start, end) pairs. Matching is
+ * exact and ignores case, like the search itself, so a word matched with a typo is not marked.
+ *
+ * @param {string}   text   Text to look in.
+ * @param {string[]} tokens Query words (see tokenize()).
+ * @return {number[][]} Ranges to highlight.
+ */
+export function highlightRanges( text, tokens ) {
+	const haystack = fold( text );
+	const found = [];
+	( tokens || [] ).forEach( ( token ) => {
+		const needle = fold( token );
+		if ( ! needle ) {
+			return;
+		}
+		for ( let at = haystack.indexOf( needle ); at !== -1; at = haystack.indexOf( needle, at + needle.length ) ) {
+			found.push( [ at, at + needle.length ] );
+		}
+	} );
+	found.sort( ( a, b ) => a[ 0 ] - b[ 0 ] || b[ 1 ] - a[ 1 ] );
+	const merged = [];
+	found.forEach( ( range ) => {
+		const last = merged[ merged.length - 1 ];
+		if ( last && range[ 0 ] <= last[ 1 ] ) {
+			last[ 1 ] = Math.max( last[ 1 ], range[ 1 ] );
+		} else {
+			merged.push( [ range[ 0 ], range[ 1 ] ] );
+		}
+	} );
+	return merged;
+}
+
+/** How far a snippet edge may move to land on a word boundary. */
+const SNAP = 24;
+
+/**
+ * A short piece of an item's text around where the query words were found, to show under a
+ * result. Only text the search matched on is used (the excerpt, else the body), so a result that
+ * matched on its title alone gets none.
+ *
+ * The window is placed to cover as many of the words as it can, starts and ends on whole words
+ * (Chinese, Japanese and Korean have no spaces, so they are cut anywhere) and never cuts a match.
+ * "…" marks a cut end.
+ *
+ * @param {Object}   item    Index item.
+ * @param {string[]} tokens  Query words.
+ * @param {string[]} matched Fields the words were found in (`matched` of a search result).
+ * @param {number}   [max]   Characters of text to show, not counting the "…".
+ * @return {{ text: string, ranges: number[][] }|null} The snippet and the spans to highlight in it.
+ */
+export function contextSnippet( item, tokens, matched, max = 110 ) {
+	const field = [ 'excerpt', 'content' ].find( ( name ) => ( matched || [] ).includes( name ) && item[ name ] );
+	if ( ! field ) {
+		return null;
+	}
+	const flat = String( item[ field ] ).replace( /\s+/g, ' ' ).trim();
+	const haystack = fold( flat );
+
+	// The first few places each word occurs.
+	const hits = [];
+	( tokens || [] ).forEach( ( token, which ) => {
+		const needle = fold( token );
+		if ( ! needle ) {
+			return;
+		}
+		let seen = 0;
+		for ( let at = haystack.indexOf( needle ); at !== -1 && seen < 20; at = haystack.indexOf( needle, at + needle.length ) ) {
+			hits.push( { at, end: at + needle.length, which } );
+			seen++;
+		}
+	} );
+	if ( ! hits.length ) {
+		return null;
+	}
+
+	// Start the window a little before a hit; prefer the one that fits the most different words, then the earliest.
+	const lead = Math.round( max * 0.3 );
+	let best = null;
+	hits.forEach( ( hit ) => {
+		const from = Math.max( 0, hit.at - lead );
+		const covered = new Set( hits.filter( ( other ) => other.at >= from && other.end <= from + max ).map( ( other ) => other.which ) ).size;
+		if ( ! best || covered > best.covered || ( covered === best.covered && hit.at < best.hit.at ) ) {
+			best = { hit, covered };
+		}
+	} );
+	const match = best.hit;
+
+	// Room for the match itself even when a word is longer than the window.
+	let end = Math.min( flat.length, Math.max( Math.max( 0, match.at - lead ) + max, match.end ) );
+	let start = Math.max( 0, Math.min( end - max, match.at ) );
+
+	const wordy = ( index ) => index >= 0 && index < flat.length && flat[ index ] !== ' ' && ! CJK.test( flat[ index ] );
+	// Start on a word: step back to where the word we landed in begins.
+	if ( start > 0 && wordy( start - 1 ) && wordy( start ) ) {
+		let back = start;
+		while ( back > 0 && start - back < SNAP && wordy( back - 1 ) ) {
+			back--;
+		}
+		if ( ! wordy( back - 1 ) ) {
+			start = back;
+		}
+	}
+	// End on a word: drop a half word, unless that would cut the match, in which case finish the word.
+	if ( end < flat.length && wordy( end - 1 ) && wordy( end ) ) {
+		const space = flat.lastIndexOf( ' ', end );
+		if ( space >= match.end ) {
+			end = space;
+		} else {
+			let forward = end;
+			while ( forward < flat.length && forward - end < SNAP && wordy( forward ) ) {
+				forward++;
+			}
+			end = forward;
+		}
+	}
+	// Never split a character made of two code units (emoji and rarer ideographs).
+	if ( start > 0 && flat.charCodeAt( start ) >= 0xdc00 && flat.charCodeAt( start ) <= 0xdfff ) {
+		start--;
+	}
+	if ( end < flat.length && flat.charCodeAt( end ) >= 0xdc00 && flat.charCodeAt( end ) <= 0xdfff ) {
+		end++;
+	}
+
+	const body = flat.slice( start, end ).trim();
+	const before = start > 0 ? '…' : '';
+	const after = end < flat.length ? '…' : '';
+	return {
+		text: before + body + after,
+		ranges: highlightRanges( body, tokens ).map( ( [ from, to ] ) => [ from + before.length, to + before.length ] ),
+	};
+}
+
 export { resultsHref } from './url.js';
 
 /**
