@@ -143,7 +143,7 @@ final class Index {
 			wp_delete_file( $tmp );
 			return self::fail( 'static_search_rename', __( 'Could not replace the index file.', 'subsite-static-search' ) );
 		}
-		chmod( self::path(), 0644 ); // phpcs:ignore WordPress.WP.AlternativeFunctions.chmod_chmod
+		chmod( self::path(), 0644 ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_chmod
 
 		$gzip   = function_exists( 'gzencode' ) ? gzencode( $json, 6 ) : false;
 		$status = array(

@@ -64,6 +64,8 @@ To hide a single item, tick **Hide this item from search** in the *Static Search
 
 **SEO** — the results page is set to `noindex` through WordPress' robots filter and All in One SEO's. Other SEO plugins that print their own robots tag need the results page set to noindex in their settings.
 
+**Source** — the scripts in `assets/js/` are minified builds of `src/`, which lives in the [GitHub repo](https://github.com/cheey2003/subsite-static-search) (the downloadable zip leaves it out). Rebuild with `npm install && npm run build`; test with `npm test`. The Select2 files in `assets/vendor/select2/` are the unmodified upstream release.
+
 ## Changelog
 
 ### 0.1.0 (2026-09-20)
