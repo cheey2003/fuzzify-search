@@ -51,6 +51,7 @@ const buildForm = ( activate = true ) => `
 	${ list( 'type_priority', [ [ 'post', 'Posts', 1 ], [ 'product', 'Products', 1 ] ] ) }
 	<input type="radio" name="${ N }[type_mode]" value="tie" checked><input type="radio" name="${ N }[type_mode]" value="first">
 	<select name="${ N }[threshold]"><option value="0.3" selected>0.3</option></select>
+	<input type="text" id="static-search-highlight-color" name="${ N }[highlight_color]" value="#1a7f37" data-default-color="#1a7f37">
 	<input type="hidden" name="${ N }[results_enabled]" value="0"><input type="checkbox" name="${ N }[results_enabled]" value="1"${ activate ? ' checked' : '' }>
 	<table><tr data-results-dependent><td><select id="static-search-results-page" name="${ N }[results_page]"><option value="0">None</option><option value="7" selected>Search</option></select></td></tr>
 	<tr data-results-dependent><td><input type="hidden" name="${ N }[forward_old_search]" value="0"><input type="checkbox" name="${ N }[forward_old_search]" value="1" checked></td></tr></table>
@@ -294,4 +295,22 @@ test( 'the page dropdown becomes a searchable Select2 when it is available', asy
 test( 'without Select2 the plain dropdown still works', async () => {
 	const { doc } = await screen();
 	assert.equal( doc.getElementById( 'static-search-results-page' ).value, '7' );
+} );
+
+test( 'the highlight colour becomes the WordPress colour picker when it is available', async () => {
+	const calls = [];
+	const jquery = Object.assign( ( el ) => ( { select2() {}, wpColorPicker: ( opts ) => calls.push( [ el.id, opts ] ) } ), { fn: { select2() {}, wpColorPicker() {} } } );
+	await screen( { jquery } );
+	assert.equal( calls.length, 1 );
+	assert.equal( calls[ 0 ][ 0 ], 'static-search-highlight-color' );
+	assert.equal( calls[ 0 ][ 1 ].defaultColor, '#1a7f37', "the picker's Default button restores the default green" );
+	assert.ok( calls[ 0 ][ 1 ].palettes.length >= 4 && calls[ 0 ][ 1 ].palettes.every( ( c ) => /^#[0-9a-f]{6}$/i.test( c ) ), 'starts from a few readable colours' );
+} );
+
+test( 'without the colour picker the plain colour field still works', async () => {
+	const { doc, window } = await screen();
+	const field = doc.getElementById( 'static-search-highlight-color' );
+	assert.equal( field.value, '#1a7f37' );
+	assert.equal( field.type, 'text' );
+	assert.equal( window.jQuery, undefined );
 } );

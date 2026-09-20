@@ -60,6 +60,7 @@ final class Admin {
 		if ( 'settings_page_' . self::PAGE !== $hook ) {
 			return;
 		}
+		wp_enqueue_style( 'wp-color-picker' );
 		wp_enqueue_style( 'static-search-select2', STATIC_SEARCH_URL . 'assets/vendor/select2/select2.min.css', array(), Frontend::asset_version( STATIC_SEARCH_DIR . 'assets/vendor/select2/select2.min.css' ) );
 		wp_enqueue_style( 'static-search-admin', STATIC_SEARCH_URL . 'assets/css/admin.css', array( 'static-search-select2' ), Frontend::asset_version( STATIC_SEARCH_DIR . 'assets/css/admin.css' ) );
 		wp_enqueue_script( 'static-search-select2', STATIC_SEARCH_URL . 'assets/vendor/select2/select2.min.js', array( 'jquery' ), Frontend::asset_version( STATIC_SEARCH_DIR . 'assets/vendor/select2/select2.min.js' ), true );
@@ -67,7 +68,7 @@ final class Admin {
 		wp_enqueue_script(
 			'static-search-admin',
 			STATIC_SEARCH_URL . 'assets/js/static-search-admin.js',
-			array( 'static-search-select2' ),
+			array( 'static-search-select2', 'wp-color-picker' ),
 			Frontend::asset_version( STATIC_SEARCH_DIR . 'assets/js/static-search-admin.js' ),
 			array(
 				'in_footer' => true,
@@ -409,6 +410,13 @@ final class Admin {
 						<?php self::checkbox( $name . '[highlight]', (bool) $settings['highlight'], __( 'Highlight the words that matched', 'subsite-static-search' ) ); ?><br>
 						<?php self::checkbox( $name . '[snippets]', (bool) $settings['snippets'], __( 'Show a piece of the text around the match', 'subsite-static-search' ) ); ?>
 						<p class="description"><?php esc_html_e( 'The text is shown under a result when the words were found in its excerpt or body text rather than its title, so those fields need to be searched (Fields to search). A word matched with a typo is not highlighted.', 'subsite-static-search' ); ?></p>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row"><label for="static-search-highlight-color"><?php esc_html_e( 'Highlight colour', 'subsite-static-search' ); ?></label></th>
+					<td>
+						<input type="text" id="static-search-highlight-color" class="static-search-color-field" name="<?php echo esc_attr( $name ); ?>[highlight_color]" value="<?php echo esc_attr( (string) $settings['highlight_color'] ); ?>" data-default-color="<?php echo esc_attr( Settings::HIGHLIGHT_COLOR ); ?>" maxlength="7">
+						<p class="description"><?php esc_html_e( 'The colour of the matched words. One colour is used on light and dark backgrounds; the default is a green that is lighter on dark backgrounds. Pick one that stands out on your results background.', 'subsite-static-search' ); ?></p>
 					</td>
 				</tr>
 			</table>

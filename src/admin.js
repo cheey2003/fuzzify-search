@@ -169,6 +169,15 @@ import { initRankLists } from './rank-lists.js';
 			language: { noResults: () => i18n.noPages },
 		} );
 	}
+	// Highlight colour: WordPress' own colour picker (Iris). Without it the field stays a plain text box.
+	const swatch = document.getElementById( 'static-search-highlight-color' );
+	if ( swatch && jq && jq.fn && jq.fn.wpColorPicker ) {
+		jq( swatch ).wpColorPicker( {
+			defaultColor: swatch.getAttribute( 'data-default-color' ) || false,
+			// Colours that read well on a light background, to start from.
+			palettes: [ '#1a7f37', '#0e7490', '#0b5cad', '#7c3aed', '#b42318', '#b54708' ],
+		} );
+	}
 	const activate = form.querySelector( `input[type="checkbox"][name="${ NAME }[results_enabled]"]` );
 	if ( activate ) {
 		const dependent = Array.from( form.querySelectorAll( '[data-results-dependent]' ) );

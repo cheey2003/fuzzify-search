@@ -24,6 +24,9 @@ final class Settings {
 	/** Typo tolerance choices: lower is stricter. */
 	public const THRESHOLDS = array( 0.2, 0.3, 0.4 );
 
+	/** The colour of highlighted words unless the settings say otherwise (the stylesheet has a lighter one for dark schemes). */
+	public const HIGHLIGHT_COLOR = '#1a7f37';
+
 	/**
 	 * Default values. `post_types` is null until saved, meaning "every searchable type".
 	 *
@@ -41,6 +44,7 @@ final class Settings {
 			'threshold'        => 0.3,
 			'show_thumbs'      => true,
 			'highlight'        => true,
+			'highlight_color'  => self::HIGHLIGHT_COLOR,
 			'snippets'         => true,
 			'results_enabled'  => true,
 			'results_page'     => 0,
@@ -164,6 +168,20 @@ final class Settings {
 		foreach ( array( 'skip_woo_pages', 'show_thumbs', 'highlight', 'snippets', 'rebuild_on_save', 'forward_old_search', 'results_enabled' ) as $key ) {
 			if ( array_key_exists( $key, $input ) ) {
 				$out[ $key ] = (bool) (int) $input[ $key ];
+			}
+		}
+
+		// The colour picker's Default button empties the field, which means the default colour. Anything that
+		// is not a hex colour leaves the current one alone.
+		if ( array_key_exists( 'highlight_color', $input ) ) {
+			$color = is_string( $input['highlight_color'] ) ? trim( $input['highlight_color'] ) : '';
+			if ( preg_match( '/^[0-9a-f]{3}$|^[0-9a-f]{6}$/i', $color ) ) {
+				$color = '#' . $color;
+			}
+			if ( is_string( $input['highlight_color'] ) && '' === $color ) {
+				$out['highlight_color'] = self::HIGHLIGHT_COLOR;
+			} elseif ( null !== sanitize_hex_color( $color ) && '' !== $color ) {
+				$out['highlight_color'] = strtolower( (string) sanitize_hex_color( $color ) );
 			}
 		}
 

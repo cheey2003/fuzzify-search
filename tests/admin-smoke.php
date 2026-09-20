@@ -157,6 +157,69 @@ remove_filter( 'static_search_settings', $force );
 $check( false === $forced['highlight'] && false === $forced['snippets'], 'the script is told when they are off' );
 $check( is_bool( $config['highlight'] ) && is_bool( $config['snippets'] ), 'and gets both values otherwise' );
 
+// Highlight colour: a WordPress colour picker field, saved only as a hex colour, printed only when it is not the default.
+$check( 1 === preg_match( '/name=["\']static_search_settings\[highlight_color\]["\'][^>]*data-default-color=["\']#1a7f37["\']/', $html ), 'has the highlight colour field, with the default for the picker\'s Default button' );
+Admin::assets( 'settings_page_static-search' );
+$check( wp_script_is( 'wp-color-picker', 'enqueued' ) && wp_style_is( 'wp-color-picker', 'enqueued' ), "the settings screen loads WordPress' colour picker" );
+$check( in_array( 'wp-color-picker', (array) wp_scripts()->registered['static-search-admin']->deps, true ), 'and the settings script waits for it' );
+$check( '#1a7f37' === Settings::defaults()['highlight_color'], 'the default colour is the green in the stylesheet' );
+
+add_filter( 'pre_option_' . Settings::OPTION, static fn() => array( 'highlight_color' => '#123456' ), 10, 0 );
+$colours = array(
+	array( '#FF5500', '#ff5500' ),
+	array( 'ff5500', '#ff5500' ),
+	array( '#abc', '#abc' ),
+	array( '  #00AAFF ', '#00aaff' ),
+	array( '', Settings::HIGHLIGHT_COLOR ),
+	array( 'red', '#123456' ),
+	array( '#12', '#123456' ),
+	array( '#gggggg', '#123456' ),
+	array( 'rgb(1,2,3)', '#123456' ),
+	array( '#fff;}body{display:none}', '#123456' ),
+	array( 'javascript:alert(1)', '#123456' ),
+	array( array( '#fff' ), '#123456' ),
+);
+$bad_colours = array();
+foreach ( $colours as $pair ) {
+	$got = Settings::sanitize( array( 'highlight_color' => $pair[0] ) )['highlight_color'];
+	if ( $pair[1] !== $got ) {
+		$bad_colours[] = wp_json_encode( $pair[0] ) . ' gave ' . wp_json_encode( $got );
+	}
+}
+$kept = Settings::sanitize( array( 'delay' => '50' ) )['highlight_color'];
+remove_all_filters( 'pre_option_' . Settings::OPTION );
+$check( ! $bad_colours, 'the colour is saved as a lower-case hex colour, empty means the default, anything else keeps the current one' . ( $bad_colours ? ': ' . $bad_colours[0] : '' ) );
+$check( '#123456' === $kept, 'a save that does not mention the colour keeps it' );
+
+$colour_with = static function ( array $extra ): string {
+	$force = static fn( array $settings ): array => array_merge( $settings, $extra );
+	add_filter( 'static_search_settings', $force );
+	$colour = SubsiteStaticSearch\Frontend::highlight_color();
+	remove_filter( 'static_search_settings', $force );
+	return $colour;
+};
+$check( '' === $colour_with( array( 'highlight' => true, 'highlight_color' => '#1a7f37' ) ), 'the default colour prints nothing, so dark schemes keep their lighter green' );
+$check( '#ff5500' === $colour_with( array( 'highlight' => true, 'highlight_color' => '#FF5500' ) ), 'a chosen colour is printed' );
+$check( '' === $colour_with( array( 'highlight' => false, 'highlight_color' => '#ff5500' ) ), 'and not when highlighting is off' );
+$hostile = array( '#fff;}body{display:none}', 'javascript:alert(1)', 'red', '</style><script>alert(1)</script>', 'url(//evil.test/x)', 12345, array( '#fff' ), null );
+$leaks   = array_filter( $hostile, static fn( $value ): bool => '' !== $colour_with( array( 'highlight' => true, 'highlight_color' => $value ) ) );
+$check( ! $leaks, 'whatever a filter puts in the setting, only a hex colour reaches the page' );
+
+$printed = static function ( array $extra ): string {
+	$force = static fn( array $settings ): array => array_merge( $settings, $extra );
+	add_filter( 'static_search_settings', $force );
+	wp_dequeue_style( 'static-search' );
+	wp_deregister_style( 'static-search' );
+	SubsiteStaticSearch\Frontend::enqueue();
+	$after = wp_styles()->get_data( 'static-search', 'after' );
+	remove_filter( 'static_search_settings', $force );
+	wp_dequeue_style( 'static-search' );
+	wp_deregister_style( 'static-search' );
+	return is_array( $after ) ? implode( '', $after ) : '';
+};
+$check( false !== strpos( $printed( array( 'highlight' => true, 'highlight_color' => '#ff5500' ) ), ':root,[data-scheme="dark"]{--static-search-mark:#ff5500}' ), 'the page gets one rule for the light and dark schemes' );
+$check( '' === $printed( array( 'highlight' => true, 'highlight_color' => '#1a7f37' ) ), 'and no rule at all for the default' );
+
 $many_types = Settings::sanitize( array( 'type_priority' => array( 'product' => '50' ) ) );
 $check( 50 === $many_types['type_priority']['product'], 'post type priority allows a long list of types' );
 

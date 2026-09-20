@@ -25,7 +25,7 @@ Static Search adds instant, typo-tolerant search to WordPress that runs entirely
 | WooCommerce | Leaves out Cart, Checkout and My account. Products set to hidden or "shop only" are always left out. |
 | Result ranking | Drag-and-drop order of Title, Categories and tags, SKU, Excerpt and Body text, and, when several post types are searched, of the post types. See below. |
 | Try it | Type a search on the settings screen and see the ranked results and which field each matched in, using the values in the form as you change them. |
-| Search box | Minimum characters, delay, results in the dropdown, typo tolerance, thumbnails, highlighted matches, and a text snippet under results that matched in the text. |
+| Search box | Minimum characters, delay, results in the dropdown, typo tolerance, thumbnails, highlighted matches with a colour you choose (WordPress' own colour picker), and a text snippet under results that matched in the text. |
 | Results page: Activate | Send Enter to the results page. Unticked, pressing Enter (or a Search button) in a search box does nothing; the instant-results dropdown still works, a highlighted result still opens on Enter, and there is no "View all" link. The settings below then dim and are ignored (their saved values are kept). |
 | Results page: Page | The page Enter goes to, chosen from a searchable list (Select2). Must contain `[static_search_results]`. |
 | Old search addresses | Forward `/?s=term` addresses to the results page. On by default. |
@@ -60,7 +60,7 @@ To hide a single item, tick **Hide this item from search** in the *Static Search
 
 **Script API** — `window.StaticSearch.search( 'query', { type: 'product' } )` returns a promise of `[ { item, score, matched } ]` (`matched` lists the fields the words were found in); `window.StaticSearch.rescan()` enhances search fields added after load.
 
-**Styling** — colours come from CSS custom properties (`--static-search-bg`, `--static-search-fg`, `--static-search-border`, `--static-search-hover`, `--static-search-muted`, `--static-search-mark`, `--static-search-shadow`); a `[data-scheme="dark"]` variant is included.
+**Styling** — colours come from CSS custom properties (`--static-search-bg`, `--static-search-fg`, `--static-search-border`, `--static-search-hover`, `--static-search-muted`, `--static-search-mark`, `--static-search-shadow`; the highlight colour setting prints `--static-search-mark` for you); a `[data-scheme="dark"]` variant is included.
 
 **SEO** — the results page is set to `noindex` through WordPress' robots filter and All in One SEO's. Other SEO plugins that print their own robots tag need the results page set to noindex in their settings.
 
@@ -72,7 +72,7 @@ To hide a single item, tick **Hide this item from search** in the *Static Search
 
 - **Highlighted matches.** The words searched for are marked in result titles, in the dropdown and on the results page; `--static-search-mark` sets the colour. Only exact matches are marked, a word matched with a typo is not.
 - **Text snippets.** When the words were found in a result's excerpt or body text rather than its title, a short piece of the text around the match is shown under it, in the dropdown and on the results page (which otherwise shows the start of the text). Screen readers read it as the result's description.
-- **Settings.** Two checkboxes under *Search box*, *Highlight the words that matched* and *Show a piece of the text around the match*, both on by default.
+- **Settings.** Two checkboxes under *Search box*, *Highlight the words that matched* and *Show a piece of the text around the match*, both on by default, and *Highlight colour*, which uses WordPress' own colour picker.
 
 ### 0.1.0 (2026-09-20)
 

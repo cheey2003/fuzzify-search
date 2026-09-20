@@ -33,6 +33,11 @@ final class Frontend {
 		}
 
 		wp_enqueue_style( 'static-search', STATIC_SEARCH_URL . 'assets/css/static-search.css', array(), self::asset_version( STATIC_SEARCH_DIR . 'assets/css/static-search.css' ) );
+		$color = self::highlight_color();
+		if ( '' !== $color ) {
+			// After the stylesheet, for the light and dark schemes alike. Printed in the page, so a static export keeps it.
+			wp_add_inline_style( 'static-search', ':root,[data-scheme="dark"]{--static-search-mark:' . $color . '}' );
+		}
 		wp_enqueue_script(
 			'static-search',
 			STATIC_SEARCH_URL . 'assets/js/static-search.js',
@@ -44,6 +49,23 @@ final class Frontend {
 			)
 		);
 		wp_add_inline_script( 'static-search', 'window.StaticSearchConfig=' . wp_json_encode( self::config() ) . ';', 'before' );
+	}
+
+	/**
+	 * The colour to print for highlighted words, or '' to leave the stylesheet's own (which is lighter on dark
+	 * schemes). Nothing is printed for the default colour, or when highlighting is off. Whatever the settings hold,
+	 * only a valid hex colour ever reaches the page.
+	 *
+	 * @return string A colour such as #1a7f37, or ''.
+	 */
+	public static function highlight_color(): string {
+		$settings = Settings::all();
+		if ( empty( $settings['highlight'] ) ) {
+			return '';
+		}
+		$color = sanitize_hex_color( is_string( $settings['highlight_color'] ?? null ) ? $settings['highlight_color'] : '' );
+		$color = is_string( $color ) ? strtolower( $color ) : '';
+		return Settings::HIGHLIGHT_COLOR === $color ? '' : $color;
 	}
 
 	/**
