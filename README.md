@@ -2,7 +2,7 @@
 
 Fuzzify Search adds instant, typo-tolerant search to WordPress that runs entirely in the visitor's browser. It writes one JSON index of your content and searches it with Fuse.js, so search behaves the same on the live site and in static HTML exports, where WordPress's own live search has no `admin-ajax.php` and no PHP results page to rely on. There is no server call at search time and no need for Simply Static Pro. You choose what is indexed, drag to set how results are ranked, and decide whether Enter opens a results page.
 
-- **Version:** 0.3.0
+- **Version:** 0.1.0
 - **Author:** Tangency
 - **Requires:** WordPress 6.0, PHP 7.4
 - **Settings:** Settings → Fuzzify Search
@@ -15,7 +15,7 @@ Fuzzify Search adds instant, typo-tolerant search to WordPress that runs entirel
 3. If SearchWP Live Ajax Search is active, deactivate it. Fuzzify Search leaves any field that plugin has taken over alone.
 4. Clear any page cache so pages pick up the new script.
 
-Fuzzify Search was called **Static Search** before 0.3.0 and lived in `subsite-static-search/`. If you installed that version, deactivate and delete it before activating this one: both read the same settings, and they cannot be active together.
+Fuzzify Search is the new name of **Static Search** (versions up to 0.2.0), which lived in `subsite-static-search/`. If you installed that version, deactivate and delete it before activating this one: both read the same settings, and they cannot be active together.
 
 ## Settings
 
@@ -70,20 +70,24 @@ To hide a single item, tick **Hide this item from search** in the *Fuzzify Searc
 
 ## Changelog
 
-### 0.3.0 (2026-09-21)
+### 0.1.0 (2026-09-22)
 
-- **Renamed to Fuzzify Search** (was Static Search), ready for the WordPress.org directory. The plugin folder and text domain are now `fuzzify-search`. Settings, hooks, filters, the shortcode, `window.StaticSearch` and the `wp static-search` command keep their names, so nothing else needs changing.
+First release as Fuzzify Search, ready for the WordPress.org directory. It continues Static Search (published on GitHub as `subsite-static-search`, versions up to 0.2.0), so the version number starts again here.
+
+- **Renamed.** The plugin folder and text domain are `fuzzify-search`. Settings, hooks, filters, the shortcode, `window.StaticSearch` and the `wp static-search` command keep their names, so nothing else needs changing.
 - **Rebuild errors.** The notice after a failed *Rebuild index now* uses fixed wording; the reason is listed in the warnings below it, as before.
 - **Old search addresses.** The forwarding script is printed with WordPress' own script function.
 - **Translations.** The plugin no longer loads its own translation files; WordPress.org provides them.
 
-### 0.2.0 (2026-09-20)
+### Before the rename (Static Search)
+
+#### Static Search 0.2.0 (2026-09-20)
 
 - **Highlighted matches.** The words searched for are marked in result titles, in the dropdown and on the results page; `--static-search-mark` sets the colour. Only exact matches are marked, a word matched with a typo is not.
 - **Text snippets.** When the words were found in a result's excerpt or body text rather than its title, a short piece of the text around the match is shown under it, in the dropdown and on the results page (which otherwise shows the start of the text). Screen readers read it as the result's description.
 - **Settings.** Two checkboxes under *Search box*, *Highlight the words that matched* and *Show a piece of the text around the match*, both on by default, and *Highlight colour*, which uses WordPress' own colour picker.
 
-### 0.1.0 (2026-09-20)
+#### Static Search 0.1.0 (2026-09-20)
 
 First release.
 

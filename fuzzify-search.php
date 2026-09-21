@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Fuzzify Search
  * Description:       Instant, typo-tolerant search that runs in the visitor's browser. Works on the live WordPress site and in static HTML exports, with no server call at search time.
- * Version:           0.3.0
+ * Version:           0.1.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            Tangency
@@ -20,7 +20,7 @@ namespace SubsiteStaticSearch;
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'STATIC_SEARCH_VERSION', '0.3.0' );
+define( 'STATIC_SEARCH_VERSION', '0.1.0' );
 define( 'STATIC_SEARCH_FILE', __FILE__ );
 define( 'STATIC_SEARCH_DIR', plugin_dir_path( __FILE__ ) );
 define( 'STATIC_SEARCH_URL', plugin_dir_url( __FILE__ ) );

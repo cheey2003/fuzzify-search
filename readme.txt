@@ -4,7 +4,7 @@ Tags: search, fuzzy search, instant search, static site, typo tolerant
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.3.0
+Stable tag: 0.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -98,19 +98,9 @@ In one JSON file in `wp-content/uploads/static-search/`. Uninstalling the plugin
 
 = I used the earlier version, called Static Search. =
 
-Fuzzify Search was called Static Search before 0.3.0 and lived in the folder `subsite-static-search`. Deactivate and delete that version before activating this one. Both read the same settings, so nothing needs setting up again.
+Fuzzify Search is the new name of Static Search (versions up to 0.2.0, published on GitHub), which lived in the folder `subsite-static-search`. Deactivate and delete that version before activating this one. Both read the same settings, so nothing needs setting up again.
 
 == Changelog ==
 
-= 0.3.0 =
-* Renamed to Fuzzify Search (was Static Search). The plugin folder and text domain are now `fuzzify-search`. Settings, hooks, filters, the shortcode, `window.StaticSearch` and the `wp static-search` command keep their names.
-* The notice after a failed "Rebuild index now" uses fixed wording. The reason is listed in the warnings below it.
-* The script that forwards old search addresses is printed with WordPress' own script function.
-* The plugin no longer loads its own translation files; WordPress.org provides them.
-
-= 0.2.0 =
-* Highlighted matches in result titles, the dropdown and the results page, with a highlight colour setting that uses WordPress' colour picker.
-* Text snippets under results whose words were found in the excerpt or body.
-
 = 0.1.0 =
-* First release.
+* First release on WordPress.org. Fuzzify Search continues the plugin published on GitHub as Static Search (up to 0.2.0), so the version number starts again. The plugin folder and text domain are `fuzzify-search`. Settings, hooks, filters, the shortcode, `window.StaticSearch` and the `wp static-search` command keep their names.
