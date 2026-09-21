@@ -128,6 +128,17 @@
 	line-height: 1.35;
 }
 
+/* Which categories or tags the words matched, when they matched those and not the text. */
+.static-search-result__terms {
+	margin-top: 0.125rem;
+	overflow: hidden;
+	overflow-wrap: anywhere;
+	color: var(--static-search-muted);
+	font-size: 0.8em;
+	font-weight: 400;
+	line-height: 1.35;
+}
+
 .static-search-result__type {
 	margin-inline-start: auto;
 	padding-inline-start: 0.75rem;
@@ -213,6 +224,12 @@
 
 .static-search-page__snippet {
 	margin: 0;
+}
+
+.static-search-page__terms {
+	margin: 0.25rem 0 0;
+	color: var(--static-search-muted);
+	font-size: 0.85em;
 }
 
 .static-search-page__more {

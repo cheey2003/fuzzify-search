@@ -27,7 +27,7 @@ Fuzzify Search is the new name of **Static Search** (versions up to 0.2.0), whic
 | WooCommerce | Leaves out Cart, Checkout and My account. Products set to hidden or "shop only" are always left out. |
 | Result ranking | Drag-and-drop order of Title, Categories and tags, SKU, Excerpt and Body text, and, when several post types are searched, of the post types. See below. |
 | Try it | Type a search on the settings screen and see the ranked results and which field each matched in, using the values in the form as you change them. |
-| Search box | Minimum characters, delay, results in the dropdown, typo tolerance, thumbnails, highlighted matches with a colour you choose (WordPress' own colour picker), and a text snippet under results that matched in the text. |
+| Search box | Minimum characters, delay, results in the dropdown, typo tolerance, thumbnails, highlighted matches with a colour you choose (WordPress' own colour picker), and, under a result, why it matched when that is not its title: a text snippet when the words were found in the text, or the category or tag ("Filed under: …") when they matched that. |
 | Results page: Activate | Send Enter to the results page. Unticked, pressing Enter (or a Search button) in a search box does nothing; the instant-results dropdown still works, a highlighted result still opens on Enter, and there is no "View all" link. The settings below then dim and are ignored (their saved values are kept). |
 | Results page: Page | The page Enter goes to, chosen from a searchable list (Select2). Must contain `[static_search_results]`. |
 | Old search addresses | Forward `/?s=term` addresses to the results page. On by default. |
@@ -89,6 +89,7 @@ First release as Fuzzify Search, ready for the WordPress.org directory. It conti
 - **Rebuild errors.** The notice after a failed *Rebuild index now* uses fixed wording; the reason is listed in the warnings below it, as before.
 - **Old search addresses.** The forwarding script is printed with WordPress' own script function.
 - **Translations.** The plugin no longer loads its own translation files; WordPress.org provides them.
+- **Matched categories and tags.** A result whose words matched a category or tag, and not its title or text, now says which ("Filed under: Post- pregnancy", with the matching word highlighted), in the dropdown and on the results page. Before, it showed nothing that explained why it was there. It goes with the *Show a piece of the text around the match* setting, whose label now covers both.
 
 ### Before the rename (Static Search)
 

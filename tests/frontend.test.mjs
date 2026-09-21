@@ -379,3 +379,90 @@ test( 'a missing thumbnail leaves no broken image behind', async () => {
 	img.dispatchEvent( new window.Event( 'error' ) );
 	assert.equal( document.querySelector( '.static-search-result img' ), null );
 } );
+
+// Which categories or tags matched ----------------------------------------------------------
+
+const TAG_INDEX = {
+	v: 1,
+	items: [
+		{ id: 1, title: 'Pre-Pregnancy Nutrition', url: '/pre/', type: 'Post', pt: 'post', content: 'What to eat before you conceive.', terms: [ 'Blog' ] },
+		{ id: 2, title: 'Spicy Savoury Pumpkin Cookies', url: '/cookies/', type: 'Post', pt: 'post', content: 'Mix the pumpkin and the spices.', terms: [ 'Blog', 'Post- pregnancy', 'Recipes' ] },
+		{ id: 3, title: 'Weekly notes', url: '/notes/', type: 'Post', pt: 'post', content: 'A change of hormonal balance during the last weeks.', terms: [ 'Blog' ] },
+		{ id: 4, title: 'Tidy shelves', url: '/shelves/', type: 'Post', pt: 'post', content: 'Sort the books.', terms: [ '<img src=x onerror=alert(1)> pregnancy' ] },
+	],
+};
+const tagConfig = ( extra = {} ) => ( { fields: [ 'title', 'content', 'terms' ], i18n: { ...baseConfig().i18n, filedUnder: 'Filed under: %s' }, ...extra } );
+const rowFor = ( document, title ) => rowsOf( document ).find( ( row ) => row.querySelector( '.static-search-result__title' ).textContent.startsWith( title ) );
+
+test( 'a match on a tag says which tag, with the typed letters marked, and no snippet', async () => {
+	const { document, type } = await page( withIndex( TAG_INDEX, tagConfig() ) );
+	await type( 'pregnancy' );
+	const cookies = rowFor( document, 'Spicy Savoury' );
+	const line = cookies.querySelector( '.static-search-result__terms' );
+	assert.ok( line, 'the result explains itself' );
+	assert.equal( line.textContent, 'Filed under: Post- pregnancy' );
+	assert.deepEqual( marksIn( line ), [ 'pregnancy' ] );
+	assert.equal( cookies.querySelector( '.static-search-result__snippet' ), null, 'the words are not in its text, so no snippet' );
+	assert.equal( cookies.querySelector( '.static-search-result__title mark' ), null, 'and not in its title, so no mark there' );
+} );
+
+test( 'a match in the title, or in the body text, gets no tag line', async () => {
+	const { document, type } = await page( withIndex( TAG_INDEX, tagConfig() ) );
+	await type( 'pregnancy' );
+	assert.equal( rowFor( document, 'Pre-Pregnancy' ).querySelector( '.static-search-result__terms' ), null, 'matched in the title' );
+	await type( 'hormonal' );
+	const body = rowFor( document, 'Weekly notes' );
+	assert.ok( body.querySelector( '.static-search-result__snippet' ), 'matched in the body: the snippet' );
+	assert.equal( body.querySelector( '.static-search-result__terms' ), null, 'and not a tag line as well' );
+} );
+
+test( 'a screen reader gets the tag line as the description', async () => {
+	const { document, type } = await page( withIndex( TAG_INDEX, tagConfig() ) );
+	await type( 'pregnancy' );
+	const cookies = rowFor( document, 'Spicy Savoury' );
+	const name = cookies.getAttribute( 'aria-labelledby' ).split( ' ' ).map( ( id ) => document.getElementById( id ).textContent );
+	assert.deepEqual( name, [ 'Spicy Savoury Pumpkin Cookies', 'Post' ], 'the name is unchanged' );
+	assert.equal( document.getElementById( cookies.getAttribute( 'aria-describedby' ) ).textContent, 'Filed under: Post- pregnancy' );
+} );
+
+test( 'the tag line goes with the snippet setting, and a page that never heard of its text shows nothing', async () => {
+	const off = await page( withIndex( TAG_INDEX, tagConfig( { snippets: false } ) ) );
+	await off.type( 'pregnancy' );
+	assert.equal( off.document.querySelectorAll( '.static-search-result__terms' ).length, 0, 'switched off' );
+	assert.ok( rowFor( off.document, 'Spicy Savoury' ), 'the result itself is still listed' );
+
+	const cached = await page( withIndex( TAG_INDEX, { fields: [ 'title', 'content', 'terms' ] } ) );
+	await cached.type( 'pregnancy' );
+	assert.equal( cached.document.querySelectorAll( '.static-search-result__terms' ).length, 0, 'no text, no line' );
+	assert.ok( ! cached.document.querySelector( '.static-search-list' ).textContent.includes( 'undefined' ) );
+} );
+
+test( 'the tag line is not marked when highlighting is off, and a hostile tag name stays text', async () => {
+	const plain = await page( withIndex( TAG_INDEX, tagConfig( { highlight: false } ) ) );
+	await plain.type( 'pregnancy' );
+	const line = rowFor( plain.document, 'Spicy Savoury' ).querySelector( '.static-search-result__terms' );
+	assert.equal( line.textContent, 'Filed under: Post- pregnancy' );
+	assert.equal( plain.document.querySelectorAll( 'mark' ).length, 0 );
+
+	const { document, type } = await page( withIndex( TAG_INDEX, tagConfig() ) );
+	await type( 'pregnancy' );
+	const hostile = rowFor( document, 'Tidy shelves' ).querySelector( '.static-search-result__terms' );
+	assert.equal( hostile.textContent, 'Filed under: <img src=x onerror=alert(1)> pregnancy' );
+	assert.equal( document.querySelectorAll( 'img[onerror]' ).length, 0, 'nothing was turned into an element' );
+} );
+
+test( 'results page: a result that matched on a tag says which, under the start of its text', async () => {
+	const { document, wait } = await page( { html: RESULTS, url: 'https://example.test/search/?q=pregnancy', ...withIndex( TAG_INDEX, tagConfig() ) } );
+	await wait( 100 );
+	const items = [ ...document.querySelectorAll( '.static-search-page__item' ) ];
+	const cookies = items.find( ( li ) => li.querySelector( '.static-search-page__heading' ).textContent.startsWith( 'Spicy' ) );
+	assert.equal( cookies.querySelector( '.static-search-page__terms' ).textContent, 'Filed under: Post- pregnancy' );
+	assert.deepEqual( marksIn( cookies.querySelector( '.static-search-page__terms' ) ), [ 'pregnancy' ] );
+	assert.match( cookies.querySelector( '.static-search-page__snippet' ).textContent, /^Mix the pumpkin/, 'the start of the text is still shown above it' );
+	const pre = items.find( ( li ) => li.querySelector( '.static-search-page__heading' ).textContent.startsWith( 'Pre-' ) );
+	assert.equal( pre.querySelector( '.static-search-page__terms' ), null, 'a title match needs none' );
+
+	const off = await page( { html: RESULTS, url: 'https://example.test/search/?q=pregnancy', ...withIndex( TAG_INDEX, tagConfig( { snippets: false } ) ) } );
+	await off.wait( 100 );
+	assert.equal( off.document.querySelectorAll( '.static-search-page__terms' ).length, 0, 'switched off' );
+} );

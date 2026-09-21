@@ -408,7 +408,7 @@ final class Admin {
 					<th scope="row"><?php esc_html_e( 'Matches', 'fuzzify-search' ); ?></th>
 					<td>
 						<?php self::checkbox( $name . '[highlight]', (bool) $settings['highlight'], __( 'Highlight the words that matched', 'fuzzify-search' ) ); ?><br>
-						<?php self::checkbox( $name . '[snippets]', (bool) $settings['snippets'], __( 'Show a piece of the text around the match', 'fuzzify-search' ) ); ?>
+						<?php self::checkbox( $name . '[snippets]', (bool) $settings['snippets'], __( 'Show a piece of the text around the match, or the category or tag that matched', 'fuzzify-search' ) ); ?>
 						<p class="description"><?php esc_html_e( 'The text is shown under a result when the words were found in its excerpt or body text rather than its title, so those fields need to be searched (Fields to search). A word matched with a typo is not highlighted.', 'fuzzify-search' ); ?></p>
 					</td>
 				</tr>

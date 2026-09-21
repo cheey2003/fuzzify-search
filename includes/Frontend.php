@@ -121,6 +121,8 @@ final class Frontend {
 				/* translators: %d: number of results */
 				'viewAll'     => __( 'View all %d results', 'fuzzify-search' ),
 				'unavailable' => __( 'Search is unavailable right now. Please try again later.', 'fuzzify-search' ),
+				/* translators: %s: the categories or tags a search matched, separated by commas */
+				'filedUnder'  => __( 'Filed under: %s', 'fuzzify-search' ),
 			),
 		);
 

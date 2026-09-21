@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { tokenize, createEngine, snippet, highlightRanges, contextSnippet, resultsHref, format } from '../src/core.js';
+import { tokenize, createEngine, snippet, highlightRanges, contextSnippet, matchingTerms, termsLine, resultsHref, format } from '../src/core.js';
 
 const items = [
 	{ title: 'Why Not? Cradle Carrot Puree, 130g', url: '/p/carrot/', type: 'Product', pt: 'product', excerpt: '', terms: [ 'Baby food' ] },
@@ -288,4 +288,88 @@ test( 'format fills %s and %d in order', () => {
 	assert.equal( format( undefined ), '' );
 	assert.equal( format( 'Showing the first %1$d of %2$d results', 20, 30 ), 'Showing the first 20 of 30 results', 'numbered placeholders' );
 	assert.equal( format( '%2$s before %1$s', 'a', 'b' ), 'b before a', 'numbered placeholders can be reordered' );
+} );
+
+// Which categories or tags matched ---------------------------------------------------------------
+
+const TAGGED = { terms: [ 'Blog', 'During pregnancy', 'Mums & dads', 'Post- pregnancy' ] };
+const markedIn = ( line ) => line.ranges.map( ( [ from, to ] ) => line.text.slice( from, to ) );
+
+test( 'matchingTerms lists the terms that hold the words, with the letters to mark', () => {
+	assert.deepEqual( matchingTerms( TAGGED, [ 'pregnancy' ], [ 'terms' ] ), [
+		{ text: 'During pregnancy', ranges: [ [ 7, 16 ] ] },
+		{ text: 'Post- pregnancy', ranges: [ [ 6, 15 ] ] },
+	] );
+} );
+
+test( 'matchingTerms marks the letters typed, even inside a longer word', () => {
+	assert.deepEqual( matchingTerms( TAGGED, [ 'pregnan' ], [ 'terms' ] )[ 0 ], { text: 'During pregnancy', ranges: [ [ 7, 14 ] ] } );
+} );
+
+test( 'matchingTerms is only for a result whose words were found in the terms', () => {
+	assert.deepEqual( matchingTerms( TAGGED, [ 'pregnancy' ], [ 'title' ] ), [], 'matched in the title: nothing to add' );
+	assert.deepEqual( matchingTerms( TAGGED, [ 'pregnancy' ], [ 'content' ] ), [] );
+	assert.deepEqual( matchingTerms( TAGGED, [ 'pregnancy' ], undefined ), [] );
+	assert.deepEqual( matchingTerms( { title: 'x' }, [ 'pregnancy' ], [ 'terms' ] ), [], 'an item with no terms' );
+	assert.deepEqual( matchingTerms( { terms: [] }, [ 'pregnancy' ], [ 'terms' ] ), [] );
+} );
+
+test( 'matchingTerms uses the closest terms when a word matched with a typo, with nothing to mark', () => {
+	const found = matchingTerms( TAGGED, [ 'pregnency' ], [ 'terms' ] );
+	assert.deepEqual( found.map( ( term ) => term.text ), [ 'During pregnancy', 'Post- pregnancy' ] );
+	found.forEach( ( term ) => assert.deepEqual( term.ranges, [] ) );
+} );
+
+test( 'matchingTerms gives at most three terms, and the number can be set', () => {
+	const many = { terms: [ 'Pregnancy 1', 'Pregnancy 2', 'Pregnancy 3', 'Pregnancy 4' ] };
+	assert.equal( matchingTerms( many, [ 'pregnancy' ], [ 'terms' ] ).length, 3 );
+	assert.equal( matchingTerms( many, [ 'pregnancy' ], [ 'terms' ], { max: 2 } ).length, 2 );
+} );
+
+test( 'matchingTerms works for Chinese, which has no spaces', () => {
+	assert.deepEqual( matchingTerms( { terms: [ '育儿', '孕期营养' ] }, [ '孕期' ], [ 'terms' ] ), [ { text: '孕期营养', ranges: [ [ 0, 2 ] ] } ] );
+} );
+
+test( 'matchingTerms agrees with the engine about which results matched on their terms', () => {
+	const engine = createEngine( [
+		{ title: 'Pumpkin cookies', url: '/a/', pt: 'post', content: 'Mix and bake.', terms: [ 'Blog', 'Post- pregnancy' ] },
+		{ title: 'Pregnancy diary', url: '/b/', pt: 'post', content: 'Day one.', terms: [ 'Blog' ] },
+	], { fields: [ 'title', 'content', 'terms' ] } );
+	const [ first, second ] = engine.search( 'pregnancy' );
+	assert.equal( first.item.url, '/b/', 'the title match ranks first' );
+	assert.deepEqual( matchingTerms( first.item, tokenize( 'pregnancy' ), first.matched ), [], 'matched on its title: no terms to show' );
+	assert.deepEqual( second.matched, [ 'terms' ] );
+	assert.deepEqual( matchingTerms( second.item, tokenize( 'pregnancy' ), second.matched ).map( ( term ) => term.text ), [ 'Post- pregnancy' ] );
+} );
+
+test( 'termsLine fills the translated template and moves the marks to where the terms land', () => {
+	const line = termsLine( TAGGED, [ 'pregnancy' ], [ 'terms' ], 'Filed under: %s' );
+	assert.equal( line.text, 'Filed under: During pregnancy, Post- pregnancy' );
+	assert.deepEqual( line.ranges, [ [ 20, 29 ], [ 37, 46 ] ] );
+	assert.deepEqual( markedIn( line ), [ 'pregnancy', 'pregnancy' ] );
+} );
+
+test( 'termsLine copes with a translation that puts the terms first or numbers the placeholder', () => {
+	const first = termsLine( TAGGED, [ 'pregnancy' ], [ 'terms' ], '%s — filed here' );
+	assert.equal( first.text, 'During pregnancy, Post- pregnancy — filed here' );
+	assert.deepEqual( markedIn( first ), [ 'pregnancy', 'pregnancy' ] );
+	assert.equal( termsLine( TAGGED, [ 'pregnancy' ], [ 'terms' ], 'Tags: %1$s' ).text, 'Tags: During pregnancy, Post- pregnancy' );
+} );
+
+test( 'termsLine is not thrown off by a label that holds the same letters as a term', () => {
+	const line = termsLine( { terms: [ 'Tags' ] }, [ 'tags' ], [ 'terms' ], 'Tags: %s' );
+	assert.equal( line.text, 'Tags: Tags' );
+	assert.deepEqual( line.ranges, [ [ 6, 10 ] ] );
+} );
+
+test( 'termsLine puts a term in as written, whatever characters it holds', () => {
+	const line = termsLine( { terms: [ 'Q&A $& more $1 $$' ] }, [ 'q&a' ], [ 'terms' ], 'Filed under: %s' );
+	assert.equal( line.text, 'Filed under: Q&A $& more $1 $$' );
+	assert.deepEqual( markedIn( line ), [ 'Q&A' ] );
+} );
+
+test( 'termsLine says nothing without a template, or when there are no terms to name', () => {
+	assert.equal( termsLine( TAGGED, [ 'pregnancy' ], [ 'terms' ], '' ), null );
+	assert.equal( termsLine( TAGGED, [ 'pregnancy' ], [ 'terms' ], undefined ), null, 'a page cached before the string existed' );
+	assert.equal( termsLine( TAGGED, [ 'pregnancy' ], [ 'title' ], 'Filed under: %s' ), null );
 } );

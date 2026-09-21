@@ -20,7 +20,7 @@ Nothing a visitor types is sent to your server or to anyone else. The browser do
 
 * An instant results dropdown on every standard WordPress search field.
 * Typos are forgiven in titles, categories and tags, and SKUs. Every word typed must match.
-* Words that matched are highlighted, and a short piece of text around the match is shown when the words were found in the excerpt or body.
+* Words that matched are highlighted, and a short piece of text around the match is shown when the words were found in the excerpt or body. When they matched a category or tag instead, that category or tag is shown ("Filed under: …"), so no result appears without a reason.
 * Chinese and other languages written without spaces work, including input-method composition. Keyboard and screen reader support is built in.
 
 **Index**

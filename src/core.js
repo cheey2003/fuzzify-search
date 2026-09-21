@@ -348,6 +348,81 @@ export function contextSnippet( item, tokens, matched, max = 110 ) {
 	};
 }
 
+/**
+ * The categories, tags and other terms of an item that the query words matched on, to show under a
+ * result that matched on them and not on its text. Only for a result whose words were found in its
+ * terms (`matched` of a search result). Terms that hold a word as typed come first, in index order,
+ * with the spans to highlight. A word matched with a typo has nothing to mark, so the closest terms
+ * are used instead.
+ *
+ * @param {Object}   item    Index item.
+ * @param {string[]} tokens  Query words.
+ * @param {string[]} matched Fields the words were found in.
+ * @param {Object}   [opts]  { max: how many terms (3), threshold: typo tolerance (0.3) }.
+ * @return {{ text: string, ranges: number[][] }[]} Terms, best first.
+ */
+export function matchingTerms( item, tokens, matched, opts ) {
+	if ( ! ( matched || [] ).includes( 'terms' ) || ! Array.isArray( item.terms ) ) {
+		return [];
+	}
+	const max = ( opts && opts.max ) || 3;
+	const threshold = opts && typeof opts.threshold === 'number' ? opts.threshold : 0.3;
+	const names = item.terms.map( ( name ) => String( name ).trim() ).filter( Boolean );
+
+	const exact = names.map( ( text ) => ( { text, ranges: highlightRanges( text, tokens ) } ) ).filter( ( term ) => term.ranges.length );
+	if ( exact.length ) {
+		return exact.slice( 0, max );
+	}
+
+	const fuse = new Fuse( names, { threshold, includeScore: true, ignoreLocation: true, minMatchCharLength: 1 } );
+	const best = new Map();
+	( tokens || [] ).forEach( ( token ) => {
+		fuse.search( token ).forEach( ( hit ) => {
+			best.set( hit.refIndex, Math.min( hit.score, best.has( hit.refIndex ) ? best.get( hit.refIndex ) : 1 ) );
+		} );
+	} );
+	return Array.from( best )
+		.sort( ( a, b ) => a[ 1 ] - b[ 1 ] || a[ 0 ] - b[ 0 ] )
+		.slice( 0, max )
+		.map( ( [ index ] ) => ( { text: names[ index ], ranges: [] } ) );
+}
+
+/**
+ * The line to show under a result that matched on its categories or tags: the translated template
+ * ("Filed under: %s") with the matching terms filled in, and the spans to highlight in the whole line.
+ *
+ * @param {Object}   item     Index item.
+ * @param {string[]} tokens   Query words.
+ * @param {string[]} matched  Fields the words were found in.
+ * @param {string}   template Translated template holding the terms as %s. Empty: no line.
+ * @param {Object}   [opts]   See matchingTerms().
+ * @return {{ text: string, ranges: number[][] }|null} The line, or null when there is nothing to say.
+ */
+export function termsLine( item, tokens, matched, template, opts ) {
+	if ( ! template ) {
+		return null;
+	}
+	const terms = matchingTerms( item, tokens, matched, opts );
+	if ( ! terms.length ) {
+		return null;
+	}
+	// Find where the terms land by filling in a marker first, so a label that happens to hold the same
+	// letters as a term cannot throw the positions off.
+	const marker = '\u0000';
+	const shell = format( template, marker );
+	const offset = shell.indexOf( marker );
+	const joined = terms.map( ( term ) => term.text ).join( ', ' );
+	const ranges = [];
+	if ( offset !== -1 ) {
+		let at = offset;
+		terms.forEach( ( term ) => {
+			term.ranges.forEach( ( [ from, to ] ) => ranges.push( [ at + from, at + to ] ) );
+			at += term.text.length + 2;
+		} );
+	}
+	return { text: shell.replace( marker, () => joined ), ranges };
+}
+
 export { resultsHref } from './url.js';
 
 /**

@@ -4,7 +4,7 @@
  * Everything runs in the browser against one static JSON file, so it behaves the same on
  * the live WordPress site and in a static HTML export.
  */
-import { createEngine, format, resultsHref, snippet, tokenize, highlightRanges, contextSnippet } from './core.js';
+import { createEngine, format, resultsHref, snippet, tokenize, highlightRanges, contextSnippet, termsLine } from './core.js';
 
 ( function () {
 	'use strict';
@@ -268,12 +268,16 @@ import { createEngine, format, resultsHref, snippet, tokenize, highlightRanges, 
 			body.append( title );
 			const labelled = [ title.id ];
 
-			// Where the words were found in the text, when that is not the title. A screen reader says the
-			// title and type as the name, as before, and reads the snippet as the description.
+			// Why the result is here when that is not the title: where the words were found in the text or,
+			// failing that, the categories or tags they matched, which would otherwise leave nothing to explain
+			// it. A screen reader says the title and type as the name, as before, and reads this as the description.
 			const found = snippets ? contextSnippet( item, tokens, hit.matched, 110 ) : null;
-			if ( found ) {
-				const preview = fill( el( 'span', 'static-search-result__snippet' ), found.text, marks ? found.ranges : [] );
-				preview.id = li.id + '-snippet';
+			const filed = snippets && ! found ? termsLine( item, tokens, hit.matched, i18n.filedUnder, { threshold: cfg.threshold } ) : null;
+			const why = found || filed;
+			if ( why ) {
+				const kind = found ? 'snippet' : 'terms';
+				const preview = fill( el( 'span', 'static-search-result__' + kind ), why.text, marks ? why.ranges : [] );
+				preview.id = li.id + '-' + kind;
 				body.append( preview );
 				li.setAttribute( 'aria-describedby', preview.id );
 			}
@@ -435,9 +439,11 @@ import { createEngine, format, resultsHref, snippet, tokenize, highlightRanges, 
 				const tokens = tokenize( query );
 				let shown = 0;
 
+				/** Where the words were found in the text, when they were found there. */
+				const around = ( hit ) => ( snippets ? contextSnippet( hit.item, tokens, hit.matched, 200 ) : null );
+
 				/** The text under a result: around the match when it was found in the text, else the start of it. */
-				const preview = ( hit ) => {
-					const context = snippets ? contextSnippet( hit.item, tokens, hit.matched, 200 ) : null;
+				const preview = ( hit, context ) => {
 					if ( context ) {
 						return context;
 					}
@@ -465,9 +471,15 @@ import { createEngine, format, resultsHref, snippet, tokenize, highlightRanges, 
 					if ( entry.type ) {
 						body.append( el( 'p', 'static-search-page__type', entry.type ) );
 					}
-					const text = preview( hit );
+					const context = around( hit );
+					const text = preview( hit, context );
 					if ( text ) {
 						body.append( fill( el( 'p', 'static-search-page__snippet' ), text.text, marks ? text.ranges : [] ) );
+					}
+					// Matched on the categories or tags and not the text: say which, so the result explains itself.
+					const filed = snippets && ! context ? termsLine( entry, tokens, hit.matched, i18n.filedUnder, { threshold: cfg.threshold } ) : null;
+					if ( filed ) {
+						body.append( fill( el( 'p', 'static-search-page__terms' ), filed.text, marks ? filed.ranges : [] ) );
 					}
 					li.append( body );
 					return li;
