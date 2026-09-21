@@ -98,7 +98,7 @@ In one JSON file in `wp-content/uploads/static-search/`. Uninstalling the plugin
 
 = I used the earlier version, called Static Search. =
 
-Fuzzify Search is the new name of Static Search (versions up to 0.2.0, published on GitHub), which lived in the folder `subsite-static-search`. Deactivate and delete that version before activating this one. Both read the same settings, so nothing needs setting up again.
+Fuzzify Search is the new name of Static Search (versions up to 0.2.0, published on GitHub), which lived in the folder `subsite-static-search`. The two cannot be active together, and they share the same settings, hidden-item flags and index. Deactivate the old plugin, then activate Fuzzify Search, and everything carries over. Then remove the old plugin's folder with `wp plugin delete subsite-static-search` or over SFTP. Do not use the Delete link in Plugins: it runs the old plugin's uninstall step, which clears the shared settings.
 
 == Changelog ==
 

@@ -1,0 +1,37 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to build & attach the zip to (e.g. v0.1.0)'
+        required: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+
+      # The folder inside the zip is fixed, so a manual upload replaces the installed plugin.
+      # Only the file name carries the version.
+      - name: Build plugin zip
+        run: |
+          git archive --format=zip --prefix=fuzzify-search/ \
+            -o "fuzzify-search-${TAG}.zip" HEAD
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.TAG }}
+          files: fuzzify-search-*.zip
+          generate_release_notes: true

@@ -10,12 +10,12 @@ Fuzzify Search adds instant, typo-tolerant search to WordPress that runs entirel
 
 ## Install
 
-1. Copy this folder to `wp-content/plugins/fuzzify-search/` (the built script `assets/js/static-search.js` is included, so Node is not needed).
+1. Download `fuzzify-search-<version>.zip` from [Releases](../../releases) (the attached file, not *Source code*) and upload it under Plugins → Add New → Upload Plugin, or copy the folder to `wp-content/plugins/fuzzify-search/`. The built scripts are included, so Node is not needed.
 2. Activate it. Activation creates a **Search** page (the results page) and builds the first index.
 3. If SearchWP Live Ajax Search is active, deactivate it. Fuzzify Search leaves any field that plugin has taken over alone.
 4. Clear any page cache so pages pick up the new script.
 
-Fuzzify Search is the new name of **Static Search** (versions up to 0.2.0), which lived in `subsite-static-search/`. If you installed that version, deactivate and delete it before activating this one: both read the same settings, and they cannot be active together.
+Fuzzify Search is the new name of **Static Search** (versions up to 0.2.0), which lived in `subsite-static-search/`. If you installed that version, switch over in this order: deactivate it, activate Fuzzify Search (your settings, hidden items and index carry over), then remove the old folder with `wp plugin delete subsite-static-search` or over SFTP. Do not use the **Delete** link in Plugins: it runs the old plugin's uninstall step, which clears the settings and hidden-item flags that Fuzzify Search now uses. The two cannot be active together.
 
 ## Settings
 
@@ -67,6 +67,17 @@ To hide a single item, tick **Hide this item from search** in the *Fuzzify Searc
 **SEO** — the results page is set to `noindex` through WordPress' robots filter and All in One SEO's. Other SEO plugins that print their own robots tag need the results page set to noindex in their settings.
 
 **Source** — the scripts in `assets/js/` are minified builds of `src/`, which lives in the [GitHub repo](https://github.com/cheey2003/fuzzify-search) (the downloadable zip leaves it out). Rebuild with `npm install && npm run build`; test with `npm test`. The Select2 files in `assets/vendor/select2/` are the unmodified upstream release.
+
+## Releasing a new version
+
+Installable zips are built by GitHub Actions (`.github/workflows/release.yml`) and attached to a [GitHub Release](../../releases). The folder inside the zip is always `fuzzify-search/`, whatever the version, so uploading a newer zip under **Plugins → Add New → Upload Plugin** replaces the installed plugin instead of adding a second, versioned copy. Use the attached `fuzzify-search-<tag>.zip`, not GitHub's *Source code* download, whose folder name carries the version.
+
+1. Bump the version in `fuzzify-search.php` (the `Version:` header and `STATIC_SEARCH_VERSION`), `package.json` and `package-lock.json`, and the `Stable tag` in `readme.txt`. Add the changelog entry here and in `readme.txt`.
+2. Run `npm run build` and `npm test`, then commit.
+3. Tag it and push the tag, e.g. `git tag v0.1.1 && git push origin v0.1.1`. Only tags starting with `v` build a release.
+4. Actions builds the zip with `git archive` (dev files and `.github` left out, per `.gitattributes`) and attaches it to that tag's Release with generated notes.
+
+If a release is ever published without the zip, run the **Release** workflow from the Actions tab and enter the existing tag. The same zip is the file to upload to WordPress.org.
 
 ## Changelog
 
