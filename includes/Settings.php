@@ -90,7 +90,7 @@ final class Settings {
 	 */
 	public static function all(): array {
 		/**
-		 * Filters the effective Static Search settings.
+		 * Filters the effective Fuzzify Search settings.
 		 *
 		 * @param array $settings Settings.
 		 */

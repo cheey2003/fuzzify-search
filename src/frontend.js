@@ -1,5 +1,5 @@
 /**
- * Static Search front end: dropdown on every standard search field, plus the results page.
+ * Fuzzify Search front end: dropdown on every standard search field, plus the results page.
  *
  * Everything runs in the browser against one static JSON file, so it behaves the same on
  * the live WordPress site and in a static HTML export.

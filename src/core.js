@@ -1,5 +1,5 @@
 /**
- * Static Search core: matching and formatting helpers. No DOM access, so it can be
+ * Fuzzify Search core: matching and formatting helpers. No DOM access, so it can be
  * tested in Node and reused by the dropdown and the results page.
  */
 import Fuse from 'fuse.js';

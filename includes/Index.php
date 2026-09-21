@@ -121,29 +121,29 @@ final class Index {
 			JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
 		);
 		if ( false === $json ) {
-			return self::fail( 'static_search_json', __( 'The index could not be encoded as JSON.', 'subsite-static-search' ) );
+			return self::fail( 'static_search_json', __( 'The index could not be encoded as JSON.', 'fuzzify-search' ) );
 		}
 
 		$dir = self::directory();
 		if ( ! wp_mkdir_p( $dir ) ) {
 			/* translators: %s: folder path */
-			return self::fail( 'static_search_dir', sprintf( __( 'Could not create %s. Check that the uploads folder is writable.', 'subsite-static-search' ), $dir ) );
+			return self::fail( 'static_search_dir', sprintf( __( 'Could not create %s. Check that the uploads folder is writable.', 'fuzzify-search' ), $dir ) );
 		}
 		if ( ! file_exists( $dir . '/index.php' ) ) {
 			// Keeps the folder from being listed; PHP files are never exported.
-			file_put_contents( $dir . '/index.php', "<?php\n// Silence is golden.\n" ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+			file_put_contents( $dir . '/index.php', "<?php\n// Silence is golden.\n" ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- our own folder under uploads; the path comes from wp_upload_dir(), never from input.
 		}
 
 		// Write to a temporary file and rename, so a visitor never gets a half-written index.
 		$tmp = $dir . '/' . self::FILE . '.' . wp_generate_password( 8, false ) . '.tmp';
-		if ( false === file_put_contents( $tmp, $json, LOCK_EX ) ) { // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
-			return self::fail( 'static_search_write', __( 'Could not write the index file.', 'subsite-static-search' ) );
+		if ( false === file_put_contents( $tmp, $json, LOCK_EX ) ) { // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- temporary file next to the index, then renamed into place; no input in the path.
+			return self::fail( 'static_search_write', __( 'Could not write the index file.', 'fuzzify-search' ) );
 		}
-		if ( ! rename( $tmp, self::path() ) ) { // phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename
+		if ( ! rename( $tmp, self::path() ) ) { // phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename -- an atomic swap, so a visitor never gets a half-written index.
 			wp_delete_file( $tmp );
-			return self::fail( 'static_search_rename', __( 'Could not replace the index file.', 'subsite-static-search' ) );
+			return self::fail( 'static_search_rename', __( 'Could not replace the index file.', 'fuzzify-search' ) );
 		}
-		chmod( self::path(), 0644 ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_chmod
+		chmod( self::path(), 0644 ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_chmod -- makes the index readable by the web server after the rename.
 
 		$gzip   = function_exists( 'gzencode' ) ? gzencode( $json, 6 ) : false;
 		$status = array(

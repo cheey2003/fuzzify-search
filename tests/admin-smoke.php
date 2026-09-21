@@ -2,7 +2,7 @@
 /**
  * Smoke test for the admin side, run against the current site:
  *
- *     wp eval-file wp-content/plugins/subsite-static-search/tests/admin-smoke.php
+ *     wp eval-file wp-content/plugins/fuzzify-search/tests/admin-smoke.php
  *
  * Renders the settings screen as an administrator, feeds the sanitiser bad input, and checks the
  * per-item exclude box's nonce and permission rules on a temporary post. Changes nothing lasting.
@@ -15,7 +15,7 @@ use SubsiteStaticSearch\Index;
 use SubsiteStaticSearch\Settings;
 
 if ( ! class_exists( Settings::class ) ) {
-	require_once dirname( __DIR__ ) . '/subsite-static-search.php';
+	require_once dirname( __DIR__ ) . '/fuzzify-search.php';
 }
 
 $failures = 0;

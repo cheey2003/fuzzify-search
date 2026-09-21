@@ -1,19 +1,21 @@
-# Static Search
+# Fuzzify Search
 
-Static Search adds instant, typo-tolerant search to WordPress that runs entirely in the visitor's browser. It writes one JSON index of your content and searches it with Fuse.js, so search behaves the same on the live site and in static HTML exports, where WordPress's own live search has no `admin-ajax.php` and no PHP results page to rely on. There is no server call at search time and no need for Simply Static Pro. You choose what is indexed, drag to set how results are ranked, and decide whether Enter opens a results page.
+Fuzzify Search adds instant, typo-tolerant search to WordPress that runs entirely in the visitor's browser. It writes one JSON index of your content and searches it with Fuse.js, so search behaves the same on the live site and in static HTML exports, where WordPress's own live search has no `admin-ajax.php` and no PHP results page to rely on. There is no server call at search time and no need for Simply Static Pro. You choose what is indexed, drag to set how results are ranked, and decide whether Enter opens a results page.
 
-- **Version:** 0.2.0
+- **Version:** 0.3.0
 - **Author:** Tangency
 - **Requires:** WordPress 6.0, PHP 7.4
-- **Settings:** Settings → Static Search
+- **Settings:** Settings → Fuzzify Search
 - **License:** GPL-2.0-or-later (bundles [Fuse.js](https://www.fusejs.io/) 7.5.0, Apache-2.0, and, on the settings screen only, [SortableJS](https://sortablejs.github.io/Sortable/) 1.15.7 and [Select2](https://select2.org/) 4.0.13, both MIT)
 
 ## Install
 
-1. Copy this folder to `wp-content/plugins/subsite-static-search/` (the built script `assets/js/static-search.js` is included, so Node is not needed).
+1. Copy this folder to `wp-content/plugins/fuzzify-search/` (the built script `assets/js/static-search.js` is included, so Node is not needed).
 2. Activate it. Activation creates a **Search** page (the results page) and builds the first index.
-3. If SearchWP Live Ajax Search is active, deactivate it. Static Search leaves any field that plugin has taken over alone.
+3. If SearchWP Live Ajax Search is active, deactivate it. Fuzzify Search leaves any field that plugin has taken over alone.
 4. Clear any page cache so pages pick up the new script.
+
+Fuzzify Search was called **Static Search** before 0.3.0 and lived in `subsite-static-search/`. If you installed that version, deactivate and delete it before activating this one: both read the same settings, and they cannot be active together.
 
 ## Settings
 
@@ -42,7 +44,7 @@ Both lists are drag-and-drop (SortableJS). Each row is a tab: drag it by the six
 
 Under the hood each row saves a rank number (`ranking[field]`, `type_priority[type]`), so the same settings can be set with the `static_search_settings` filter.
 
-To hide a single item, tick **Hide this item from search** in the *Static Search* box on its edit screen. Hidden items are labelled in the Posts / Pages / Products lists and listed on the settings screen. Password-protected posts are indexed by title only.
+To hide a single item, tick **Hide this item from search** in the *Fuzzify Search* box on its edit screen. Hidden items are labelled in the Posts / Pages / Products lists and listed on the settings screen. Password-protected posts are indexed by title only.
 
 ## For developers
 
@@ -64,9 +66,16 @@ To hide a single item, tick **Hide this item from search** in the *Static Search
 
 **SEO** — the results page is set to `noindex` through WordPress' robots filter and All in One SEO's. Other SEO plugins that print their own robots tag need the results page set to noindex in their settings.
 
-**Source** — the scripts in `assets/js/` are minified builds of `src/`, which lives in the [GitHub repo](https://github.com/cheey2003/subsite-static-search) (the downloadable zip leaves it out). Rebuild with `npm install && npm run build`; test with `npm test`. The Select2 files in `assets/vendor/select2/` are the unmodified upstream release.
+**Source** — the scripts in `assets/js/` are minified builds of `src/`, which lives in the [GitHub repo](https://github.com/cheey2003/fuzzify-search) (the downloadable zip leaves it out). Rebuild with `npm install && npm run build`; test with `npm test`. The Select2 files in `assets/vendor/select2/` are the unmodified upstream release.
 
 ## Changelog
+
+### 0.3.0 (2026-09-21)
+
+- **Renamed to Fuzzify Search** (was Static Search), ready for the WordPress.org directory. The plugin folder and text domain are now `fuzzify-search`. Settings, hooks, filters, the shortcode, `window.StaticSearch` and the `wp static-search` command keep their names, so nothing else needs changing.
+- **Rebuild errors.** The notice after a failed *Rebuild index now* uses fixed wording; the reason is listed in the warnings below it, as before.
+- **Old search addresses.** The forwarding script is printed with WordPress' own script function.
+- **Translations.** The plugin no longer loads its own translation files; WordPress.org provides them.
 
 ### 0.2.0 (2026-09-20)
 

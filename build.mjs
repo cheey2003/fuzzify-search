@@ -23,7 +23,7 @@ for ( const [ entry, outfile, credits ] of [
 		target: 'es2018',
 		format: 'iife',
 		outfile,
-		banner: { js: `/*! Static Search | includes ${ credits } */` },
+		banner: { js: `/*! Fuzzify Search | includes ${ credits } */` },
 	} );
 }
 

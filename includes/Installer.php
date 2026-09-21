@@ -44,7 +44,7 @@ final class Installer {
 			array(
 				'post_type'    => 'page',
 				'post_status'  => 'publish',
-				'post_title'   => _x( 'Search', 'results page title', 'subsite-static-search' ),
+				'post_title'   => _x( 'Search', 'results page title', 'fuzzify-search' ),
 				'post_name'    => 'search',
 				'post_content' => '<!-- wp:shortcode -->[static_search_results]<!-- /wp:shortcode -->',
 			),

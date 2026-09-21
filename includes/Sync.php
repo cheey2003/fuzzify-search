@@ -102,7 +102,7 @@ final class Sync {
 			Index::build();
 		} catch ( \Throwable $e ) {
 			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-				error_log( 'Static Search: index rebuild before export failed: ' . $e->getMessage() ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+				error_log( 'Fuzzify Search: index rebuild before export failed: ' . $e->getMessage() ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- the pre-export rebuild has no screen to report on, so a failure goes to the log.
 			}
 		}
 	}

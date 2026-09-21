@@ -1,5 +1,5 @@
 /**
- * Static Search settings screen: drag-and-drop ranking lists and the "Try it" box.
+ * Fuzzify Search settings screen: drag-and-drop ranking lists and the "Try it" box.
  *
  * The "Try it" box runs the same matching the visitors get against the current index, using the
  * values now in the form (saved or not), so a change to the ranking shows its effect straight away.

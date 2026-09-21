@@ -1,5 +1,5 @@
 /*
- * Static Search front end.
+ * Fuzzify Search front end.
  *
  * Colours come from custom properties so a theme can restyle everything from one place:
  *   :root { --static-search-bg: #fff; --static-search-fg: #212529; ... }

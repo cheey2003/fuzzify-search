@@ -108,19 +108,19 @@ final class Frontend {
 			'typeRank'   => (array) $settings['type_priority'],
 			'typeMode'   => (string) $settings['type_mode'],
 			'i18n'       => array(
-				'searchTitle' => __( 'Search', 'subsite-static-search' ),
-				'prompt'      => __( 'Type what you are looking for in the search box.', 'subsite-static-search' ),
+				'searchTitle' => __( 'Search', 'fuzzify-search' ),
+				'prompt'      => __( 'Type what you are looking for in the search box.', 'fuzzify-search' ),
 				/* translators: %s: the search query */
-				'resultsFor'  => __( 'Search results for “%s”', 'subsite-static-search' ),
-				'loading'     => __( 'Searching…', 'subsite-static-search' ),
-				'one'         => __( '1 result', 'subsite-static-search' ),
+				'resultsFor'  => __( 'Search results for “%s”', 'fuzzify-search' ),
+				'loading'     => __( 'Searching…', 'fuzzify-search' ),
+				'one'         => __( '1 result', 'fuzzify-search' ),
 				/* translators: %d: number of results */
-				'many'        => __( '%d results', 'subsite-static-search' ),
-				'none'        => __( 'No results found.', 'subsite-static-search' ),
-				'more'        => __( 'Show more', 'subsite-static-search' ),
+				'many'        => __( '%d results', 'fuzzify-search' ),
+				'none'        => __( 'No results found.', 'fuzzify-search' ),
+				'more'        => __( 'Show more', 'fuzzify-search' ),
 				/* translators: %d: number of results */
-				'viewAll'     => __( 'View all %d results', 'subsite-static-search' ),
-				'unavailable' => __( 'Search is unavailable right now. Please try again later.', 'subsite-static-search' ),
+				'viewAll'     => __( 'View all %d results', 'fuzzify-search' ),
+				'unavailable' => __( 'Search is unavailable right now. Please try again later.', 'fuzzify-search' ),
 			),
 		);
 
@@ -156,11 +156,11 @@ final class Frontend {
 		ob_start();
 		?>
 		<div class="static-search-page" data-static-search-page>
-			<h2 class="static-search-page__title" data-static-search-title><?php esc_html_e( 'Search', 'subsite-static-search' ); ?></h2>
+			<h2 class="static-search-page__title" data-static-search-title><?php esc_html_e( 'Search', 'fuzzify-search' ); ?></h2>
 			<p class="static-search-page__status" role="status" aria-live="polite" data-static-search-status></p>
 			<ol class="static-search-page__list" data-static-search-list></ol>
 			<button type="button" class="static-search-page__more button" data-static-search-more hidden></button>
-			<noscript><p><?php esc_html_e( 'Search needs JavaScript. Please turn it on and reload this page.', 'subsite-static-search' ); ?></p></noscript>
+			<noscript><p><?php esc_html_e( 'Search needs JavaScript. Please turn it on and reload this page.', 'fuzzify-search' ); ?></p></noscript>
 		</div>
 		<?php
 		return (string) ob_get_clean();
@@ -181,8 +181,12 @@ final class Frontend {
 		if ( '' === $url || ! is_readable( $file ) ) {
 			return;
 		}
-		// The script is our own build output and the address is JSON-encoded for safe use inside <script>.
-		echo '<script id="static-search-forward">window.StaticSearchForward=' . wp_json_encode( $url, JSON_HEX_TAG | JSON_HEX_AMP ) . ';' . (string) file_get_contents( $file ) . "</script>\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped, WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+		$code = (string) file_get_contents( $file ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- reads our own bundled script from disk, not a URL.
+		// Our own build output, and the address is JSON-encoded for safe use inside <script>.
+		wp_print_inline_script_tag(
+			'window.StaticSearchForward=' . wp_json_encode( $url, JSON_HEX_TAG | JSON_HEX_AMP ) . ';' . $code,
+			array( 'id' => 'static-search-forward' )
+		);
 	}
 
 	/**

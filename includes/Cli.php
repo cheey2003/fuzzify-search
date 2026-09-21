@@ -12,7 +12,7 @@ namespace SubsiteStaticSearch;
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Manage the Static Search index.
+ * Manage the Fuzzify Search index.
  */
 final class Cli {
 
@@ -32,7 +32,7 @@ final class Cli {
 	 * @param string[]             $args       Positional arguments.
 	 * @param array<string,string> $assoc_args Named arguments.
 	 */
-	public function rebuild( $args, $assoc_args ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter
+	public function rebuild( $args, $assoc_args ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter -- WP-CLI passes both arguments to every command.
 		$result = Index::build();
 		if ( is_wp_error( $result ) ) {
 			\WP_CLI::error( $result->get_error_message() );
@@ -58,7 +58,7 @@ final class Cli {
 	 * @param string[]             $args       Positional arguments.
 	 * @param array<string,string> $assoc_args Named arguments.
 	 */
-	public function status( $args, $assoc_args ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter
+	public function status( $args, $assoc_args ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter -- WP-CLI passes both arguments to every command.
 		$status = Index::status();
 		\WP_CLI::log( 'File:      ' . Index::path() . ( Index::exists() ? '' : ' (missing)' ) );
 		\WP_CLI::log( 'Items:     ' . $status['count'] );

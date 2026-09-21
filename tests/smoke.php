@@ -2,7 +2,7 @@
 /**
  * Smoke test for the index builder, run against the current site:
  *
- *     wp eval-file wp-content/plugins/subsite-static-search/tests/smoke.php
+ *     wp eval-file wp-content/plugins/fuzzify-search/tests/smoke.php
  *
  * Writes the index to a temporary folder (not the site's uploads) and checks its contents.
  * Creates and removes one temporary post to prove per-item exclusion. Leaves the site as found.
@@ -15,7 +15,7 @@ use SubsiteStaticSearch\Settings;
 
 if ( ! defined( 'ABSPATH' ) || ! class_exists( Index::class ) ) {
 	// Not activated: load it for this run only.
-	require_once dirname( __DIR__ ) . '/subsite-static-search.php';
+	require_once dirname( __DIR__ ) . '/fuzzify-search.php';
 }
 
 $failures = 0;

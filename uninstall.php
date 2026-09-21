@@ -1,6 +1,6 @@
 <?php
 /**
- * Removes what Static Search stored: its settings, status, per-item flags and index file.
+ * Removes what Fuzzify Search stored: its settings, status, per-item flags and index file.
  *
  * The results page it created is left in place, since it is ordinary content the site may
  * link to. Delete it from Pages if you no longer want it.
@@ -30,7 +30,7 @@ function static_search_uninstall_site(): void {
 				wp_delete_file( $file );
 			}
 		}
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir -- removes our own, now empty, uploads folder.
 		@rmdir( $folder );
 	}
 }
