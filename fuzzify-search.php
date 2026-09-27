@@ -1,7 +1,7 @@
 <?php
 /**
- * Plugin Name:       Fuzzify Search
- * Description:       Instant, typo-tolerant search that runs in the visitor's browser. Works on the live WordPress site and in static HTML exports, with no server call at search time.
+ * Plugin Name:       Fuzzify Search – Add Instant Search Results for Static Sites
+ * Description:       Instant, typo-tolerant search that runs in the browser. Works in static site exports and on live sites, with no external service.
  * Version:           0.1.0
  * Requires at least: 6.0
  * Requires PHP:      7.4

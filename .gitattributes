@@ -5,6 +5,8 @@
 /.gitattributes export-ignore
 /.gitignore export-ignore
 /.github export-ignore
+/.wordpress-org export-ignore
+/design export-ignore
 /build.mjs export-ignore
 /package.json export-ignore
 /package-lock.json export-ignore

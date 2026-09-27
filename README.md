@@ -1,12 +1,12 @@
 # Fuzzify Search
 
-Fuzzify Search adds instant, typo-tolerant search to WordPress that runs entirely in the visitor's browser. It writes one JSON index of your content and searches it with Fuse.js, so search behaves the same on the live site and in static HTML exports, where WordPress's own live search has no `admin-ajax.php` and no PHP results page to rely on. There is no server call at search time and no need for Simply Static Pro. You choose what is indexed, drag to set how results are ranked, and decide whether Enter opens a results page.
+Fuzzify Search enhances the default WordPress search and the core Search block directly, by attaching to whatever standard search field is already on the page rather than replacing or registering anything: it adds instant, typo-tolerant search to WordPress that runs entirely in the visitor's browser. It writes one JSON index of your content and searches it with Fuse.js, so search behaves the same on the live site and in static HTML exports, where WordPress's own live search has no `admin-ajax.php` and no PHP results page to rely on. Nothing is sent to a server at search time: the browser downloads the index file once and searches it locally. It is tested with the free Simply Static, and there is no Pro version and no need for Simply Static Pro. You choose what is indexed, drag to set how results are ranked, and decide whether Enter opens a results page.
 
 - **Version:** 0.1.0
 - **Author:** Tangency
 - **Requires:** WordPress 6.0, PHP 7.4
 - **Settings:** Settings → Fuzzify Search
-- **License:** GPL-2.0-or-later (bundles [Fuse.js](https://www.fusejs.io/) 7.5.0, Apache-2.0, and, on the settings screen only, [SortableJS](https://sortablejs.github.io/Sortable/) 1.15.7 and [Select2](https://select2.org/) 4.0.13, both MIT)
+- **License:** GPL-2.0-or-later (bundles [Fuse.js](https://www.fusejs.io/) 7.5.0, Apache-2.0, and, on the settings screen only, [SortableJS](https://sortablejs.github.io/Sortable/) 1.15.7 and [Select2](https://select2.org/) 4.1.0, both MIT)
 
 ## Install
 
@@ -24,7 +24,7 @@ Fuzzify Search is the new name of **Static Search** (versions up to 0.2.0), whic
 | Post types | Which content is searched. Default: everything WordPress' own search covers. |
 | Fields to search | Excerpt, content, categories/tags/other terms, product SKU. The title is always searched. |
 | Content length limit | Caps the body text kept per item, to keep the index small on large sites. |
-| WooCommerce | Leaves out Cart, Checkout and My account. Products set to hidden or "shop only" are always left out. |
+| WooCommerce | Leaves out Cart, Checkout and My account. Products set to hidden or "shop only" are always left out. WooCommerce's own Product Search widget/block is enhanced too: it marks its form with a hidden `post_type` field, which the script detects and uses to keep both the dropdown and the results page to that type. |
 | Result ranking | Drag-and-drop order of Title, Categories and tags, SKU, Excerpt and Body text, and, when several post types are searched, of the post types. See below. |
 | Try it | Type a search on the settings screen and see the ranked results and which field each matched in, using the values in the form as you change them. |
 | Search box | Minimum characters, delay, results in the dropdown, typo tolerance, thumbnails, highlighted matches with a colour you choose (WordPress' own colour picker), and, under a result, why it matched when that is not its title: a text snippet when the words were found in the text, or the category or tag ("Filed under: …") when they matched that. |
@@ -74,39 +74,27 @@ Installable zips are built by GitHub Actions (`.github/workflows/release.yml`) a
 
 1. Bump the version in `fuzzify-search.php` (the `Version:` header and `STATIC_SEARCH_VERSION`), `package.json` and `package-lock.json`, and the `Stable tag` in `readme.txt`. Add the changelog entry here and in `readme.txt`.
 2. Run `npm run build` and `npm test`, then commit.
-3. Tag it and push the tag, e.g. `git tag v0.1.1 && git push origin v0.1.1`. Only tags starting with `v` build a release.
+3. Tag it and push the tag, e.g. `git tag v0.1.1 && git push origin v0.1.1`. Only tags starting with `v` start the workflows.
 4. Actions builds the zip with `git archive` (dev files and `.github` left out, per `.gitattributes`) and attaches it to that tag's Release with generated notes.
 
-If a release is ever published without the zip, run the **Release** workflow from the Actions tab and enter the existing tag. The same zip is the file to upload to WordPress.org.
+If a release is ever published without the zip, run the **Release** workflow from the Actions tab and enter the existing tag.
+
+### Publishing to WordPress.org
+
+The same tag also starts **Deploy to WordPress.org** (`.github/workflows/deploy-wporg.yml`, built on [10up's deploy action](https://github.com/10up/action-wordpress-plugin-deploy)). It checks that the version in the plugin header, `STATIC_SEARCH_VERSION`, `package.json` and the `Stable tag` in `readme.txt` all match the tag, runs the tests, checks that the committed scripts are what the source builds, and then commits `trunk` and `tags/<version>` to the WordPress.org SVN repository in one commit. The files it sends are the same ones as in the release zip.
+
+**One-time setup.** In the repository's Settings → Environments, create an environment named `wordpress-org`, add yourself under *Required reviewers*, and add two secrets there: `SVN_USERNAME` (your WordPress.org username) and `SVN_PASSWORD` (the SVN password from your WordPress.org profile, under *Account & Security*; it is separate from your login password). Each deploy then waits for your approval before it publishes. To try a tag without publishing, run the workflow from the Actions tab, enter the tag and leave *Dry run* ticked: the log ends with the files SVN would receive.
+
+SVN versions are permanent. If `tags/<version>` already exists the deploy does nothing, so a bad release is fixed by shipping a new version. The icon, banner and screenshots for the WordPress.org page are in `.wordpress-org/`. Each deploy syncs that folder to SVN's `assets/` folder (and removes anything else in there), and `.gitattributes` keeps it out of the zip. Because a deploy stops early when `tags/<version>` already exists, changes to the artwork or to `readme.txt` alone do not go out with it: ship a new version, or use 10up's [asset-update action](https://github.com/10up/action-wordpress-plugin-asset-update). `design/` holds the sources of the icon (`icon.svg`) and banner (`banner.html`, which runs the plugin's own script and styles against a demo index); the screenshots are captures of the plugin on a demo site.
 
 ## Changelog
 
 ### 0.1.0 (2026-09-22)
 
-First release as Fuzzify Search, ready for the WordPress.org directory. It continues Static Search (published on GitHub as `subsite-static-search`, versions up to 0.2.0), so the version number starts again here.
+First release as Fuzzify Search, ready for the WordPress.org directory.
 
 - **Renamed.** The plugin folder and text domain are `fuzzify-search`. Settings, hooks, filters, the shortcode, `window.StaticSearch` and the `wp static-search` command keep their names, so nothing else needs changing.
 - **Rebuild errors.** The notice after a failed *Rebuild index now* uses fixed wording; the reason is listed in the warnings below it, as before.
 - **Old search addresses.** The forwarding script is printed with WordPress' own script function.
 - **Translations.** The plugin no longer loads its own translation files; WordPress.org provides them.
 - **Matched categories and tags.** A result whose words matched a category or tag, and not its title or text, now says which ("Filed under: Post- pregnancy", with the matching word highlighted), in the dropdown and on the results page. Before, it showed nothing that explained why it was there. It goes with the *Show a piece of the text around the match* setting, whose label now covers both.
-
-### Before the rename (Static Search)
-
-#### Static Search 0.2.0 (2026-09-20)
-
-- **Highlighted matches.** The words searched for are marked in result titles, in the dropdown and on the results page; `--static-search-mark` sets the colour. Only exact matches are marked, a word matched with a typo is not.
-- **Text snippets.** When the words were found in a result's excerpt or body text rather than its title, a short piece of the text around the match is shown under it, in the dropdown and on the results page (which otherwise shows the start of the text). Screen readers read it as the result's description.
-- **Settings.** Two checkboxes under *Search box*, *Highlight the words that matched* and *Show a piece of the text around the match*, both on by default, and *Highlight colour*, which uses WordPress' own colour picker.
-
-#### Static Search 0.1.0 (2026-09-20)
-
-First release.
-
-- **Search.** An instant dropdown on every standard WordPress search field, powered by Fuse.js. Typos are forgiven in titles, categories and SKUs; every word must match; Chinese and other languages without spaces work, including input-method composition; keyboard and screen-reader support.
-- **Index.** One JSON file in the uploads folder. Choose the post types and fields, cap the body text, hide single items, and skip WooCommerce cart, checkout and account pages and hidden products. Password-protected posts are indexed by title only. Rebuilt when content changes, when settings are saved, at the start of a Simply Static export, from the settings screen, and with `wp static-search rebuild`.
-- **Results page.** A `/search/` page created on activation (set to `noindex`), with an *Activate* switch (off: Enter does nothing), a searchable page picker (Select2) and results per page.
-- **Old addresses.** `/?s=term` addresses are forwarded to the results page on a static host; a live site's own results page is left alone.
-- **Ranking.** Drag-and-drop field priority (with "Same priority as above"), post type priority, and a "Try it" box that ranks live from the unsaved form.
-- **Static export.** The index and results page are exported by the free Simply Static; no Pro needed. All addresses are root-relative.
-- **Developers.** Filters `static_search_settings`, `static_search_include_post`, `static_search_item`, `static_search_config` and `static_search_selector`; the `static_search_index_built` action; a `window.StaticSearch` script API; WP-CLI `rebuild` and `status`; uninstalling removes the settings, per-item flags and index file (the results page is left in place).

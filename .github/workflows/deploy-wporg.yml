@@ -1,0 +1,97 @@
+name: Deploy to WordPress.org
+
+# Pushing a version tag (v0.1.1) publishes that version to the WordPress.org SVN repository: trunk
+# and tags/0.1.1, in one commit. It runs alongside the Release workflow, which attaches the zip
+# to the GitHub Release.
+#
+# To try a tag without publishing: Actions > Deploy to WordPress.org > Run workflow, enter the
+# tag and leave "Dry run" ticked. The log ends with the list of files SVN would receive.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to deploy (e.g. v0.1.0)'
+        required: true
+      dry_run:
+        description: 'Dry run: do everything except the final SVN commit'
+        type: boolean
+        default: true
+
+# Two deploys at once would collide in SVN.
+concurrency:
+  group: deploy-wporg
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Optional but recommended: a release goes to every site with auto-updates as soon as it is in SVN, and
+    # SVN versions cannot be replaced. Create an environment called "wordpress-org" (Settings > Environments),
+    # add yourself as a required reviewer and keep the two SVN secrets there, and each deploy waits for one
+    # click. Delete the next line (and use repository secrets) to deploy without being asked.
+    environment: wordpress-org
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # A tag that disagrees with the files is the classic way to publish the wrong version. WordPress.org
+      # also wants "Stable tag" in readme.txt to match the plugin's version.
+      - name: Check the version numbers agree with the tag
+        run: |
+          set -euo pipefail
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+(\.[0-9]+)?$ ]] || { echo "::error::Tag '$TAG' is not a plain version such as v1.2.3"; exit 1; }
+          V="${TAG#v}"
+          header=$(sed -n -E 's/^[[:space:]]*\*[[:space:]]*Version:[[:space:]]*//p' fuzzify-search.php | head -1 | tr -d '\r')
+          const=$(sed -n -E "s/^define\( 'STATIC_SEARCH_VERSION', '([^']+)' \);.*/\1/p" fuzzify-search.php | head -1 | tr -d '\r')
+          stable=$(sed -n -E 's/^Stable tag:[[:space:]]*//p' readme.txt | head -1 | tr -d '\r')
+          pkg=$(node -p "require('./package.json').version")
+          fail=0
+          for item in "plugin header:$header" "STATIC_SEARCH_VERSION:$const" "readme.txt Stable tag:$stable" "package.json:$pkg"; do
+            name="${item%%:*}"; value="${item#*:}"
+            if [[ "$value" != "$V" ]]; then echo "::error::$name is '$value', but the tag $TAG means $V"; fail=1; fi
+          done
+          [[ "$fail" -eq 0 ]] || exit 1
+          echo "Version $V agrees everywhere."
+          echo "VERSION=$V" >> "$GITHUB_ENV"
+
+      # The scripts and styles that ship are built and committed, so make sure the committed copies are the
+      # ones the source produces.
+      - name: Test, and check the built files are up to date
+        run: |
+          set -euo pipefail
+          npm ci
+          npm test
+          npm run build
+          git diff --exit-code -- \
+            assets/js/static-search.js assets/js/static-search-admin.js assets/js/static-search-forward.js \
+            assets/vendor/select2/select2.min.js assets/vendor/select2/select2.min.css
+          # The build also rewrites a licence file with different line endings. That is not a change worth
+          # shipping, and the deploy step commits anything it finds lying around, so put it back.
+          git checkout -- .
+          test -z "$(git status --porcelain --untracked-files=all)"
+
+      # Pinned to a commit because this step receives the SVN password.
+      - name: Publish to WordPress.org
+        uses: 10up/action-wordpress-plugin-deploy@54bd289b8525fd23a5c365ec369185f2966529c2 # 2.3.0
+        with:
+          dry-run: ${{ inputs.dry_run == true }}
+        env:
+          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+          SLUG: fuzzify-search

@@ -2,3 +2,6 @@
 node_modules/
 *.md
 !README.md
+
+# Commercial font, not ours to redistribute; see design/subsite-brand/fonts/README.md.
+design/subsite-brand/fonts/URWDINCond-*.otf
