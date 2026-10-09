@@ -422,7 +422,7 @@ final class Admin {
 				<tr>
 					<th scope="row"><label for="static-search-highlight-color"><?php esc_html_e( 'Highlight colour', 'fuzzify-search' ); ?></label></th>
 					<td>
-						<input type="text" id="static-search-highlight-color" class="static-search-color-field" name="<?php echo esc_attr( $name ); ?>[highlight_color]" value="<?php echo esc_attr( (string) $settings['highlight_color'] ); ?>" data-default-color="<?php echo esc_attr( Settings::HIGHLIGHT_COLOR ); ?>" maxlength="7">
+						<input type="text" id="static-search-highlight-color" class="static-search-color-field" name="<?php echo esc_attr( $name ); ?>[highlight_color]" value="<?php echo esc_attr( (string) $settings['highlight_color'] ); ?>" data-default-color="<?php echo esc_attr( Settings::HIGHLIGHT_COLOR ); ?>" maxlength="7" pattern="#?[0-9a-fA-F]{3}|#?[0-9a-fA-F]{6}" title="<?php esc_attr_e( 'A hex colour, e.g. #1a7f37', 'fuzzify-search' ); ?>">
 						<p class="description"><?php esc_html_e( 'The colour of the matched words. One colour is used on light and dark backgrounds; the default is a green that is lighter on dark backgrounds. Pick one that stands out on your results background.', 'fuzzify-search' ); ?></p>
 					</td>
 				</tr>
