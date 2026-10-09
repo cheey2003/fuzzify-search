@@ -26,6 +26,7 @@ const baseConfig = () => ( {
 	i18n: {
 		searchTitle: 'Search', prompt: 'Type something.', resultsFor: 'Search results for “%s”', loading: 'Searching…',
 		one: '1 result', many: '%d results', none: 'No results found.', more: 'Show more', viewAll: 'View all %d results', unavailable: 'Search is unavailable.',
+		didYouMean: 'Did you mean %s?',
 	},
 } );
 
@@ -72,6 +73,14 @@ test( 'enhances a standard search field with combobox semantics', async () => {
 	assert.equal( requests.length, 0, 'nothing is downloaded until the visitor interacts' );
 } );
 
+test( 'a configured placeholder overrides the theme\'s own; none leaves it alone', async () => {
+	const themed = await page( { html: FORM.replace( '<input type="search" name="s" required>', '<input type="search" name="s" required placeholder="Theme text">' ) } );
+	assert.equal( themed.input.getAttribute( 'placeholder' ), 'Theme text' );
+
+	const configured = await page( { config: { placeholder: 'Search the shop…' } } );
+	assert.equal( configured.input.getAttribute( 'placeholder' ), 'Search the shop…' );
+} );
+
 test( 'leaves a field alone when SearchWP Live has already taken it over', async () => {
 	const { input } = await page( { html: FORM.replace( '<input ', '<input data-swplive="true" ' ) } );
 	assert.equal( input.getAttribute( 'role' ), null );
@@ -102,6 +111,29 @@ test( 'below the minimum length nothing is shown; no matches shows the message',
 	await type( 'zzzzqqqq' );
 	assert.equal( input.getAttribute( 'aria-expanded' ), 'true' );
 	assert.equal( document.querySelector( '.static-search-empty' ).textContent, 'No results found.' );
+} );
+
+test( 'a typo too rough for the search itself offers a "Did you mean" word; clicking it searches again, showing every match', async () => {
+	const { input, document, type } = await page();
+	await type( 'bananaxxx' );
+	const empty = document.querySelector( '.static-search-empty' );
+	assert.equal( empty.textContent, 'No results found. Did you mean banana?' );
+	const button = empty.querySelector( 'button' );
+	assert.equal( button.textContent, 'banana' );
+
+	button.click();
+	await new Promise( ( r ) => setTimeout( r, 10 ) );
+	assert.equal( input.value, 'banana' );
+	const titles = [ ...document.querySelectorAll( '.static-search-result__title' ) ].map( ( n ) => n.textContent );
+	assert.equal( titles.length, 1 );
+	assert.match( titles[ 0 ], /Banana/ );
+} );
+
+test( 'a nonsense query gets no suggestion, just the plain message', async () => {
+	const { document, type } = await page();
+	await type( 'zzzzqqqq' );
+	assert.equal( document.querySelector( '.static-search-empty' ).textContent, 'No results found.' );
+	assert.equal( document.querySelector( '.static-search-empty button' ), null );
 } );
 
 test( 'works for Chinese queries', async () => {
@@ -254,6 +286,16 @@ test( 'results page: renders ?q= in pages, prefills the search box', async () =>
 	assert.equal( more.hidden, true );
 	const first = document.querySelector( '.static-search-page__heading a' );
 	assert.match( first.getAttribute( 'href' ), /^\/(product|cradle-cap)\// );
+} );
+
+test( 'results page: a typo too rough for the search itself offers a "Did you mean" link', async () => {
+	const { document, wait } = await page( { html: RESULTS, url: 'https://example.test/search/?q=bananaxxx' } );
+	await wait( 100 );
+	const status = document.querySelector( '[data-static-search-status]' );
+	assert.equal( status.textContent, 'No results found. Did you mean banana?' );
+	const link = status.querySelector( 'a' );
+	assert.equal( link.textContent, 'banana' );
+	assert.equal( link.getAttribute( 'href' ), '/search/?q=banana' );
 } );
 
 test( 'results page: with no query it prompts; with an odd query it does not break', async () => {

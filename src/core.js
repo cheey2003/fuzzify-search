@@ -64,6 +64,19 @@ export const DEFAULT_RANK = { title: 1, terms: 2, sku: 2, excerpt: 3, content: 4
 /** Fields where a typo is forgiven. Excerpts and body text must match as typed. */
 const FUZZY_FIELDS = [ 'title', 'terms', 'sku' ];
 
+/** Fields a "did you mean" word is drawn from: curated text. Body copy is excluded as too noisy. */
+const DICTIONARY_FIELDS = [ 'title', 'terms' ];
+
+/**
+ * "Did you mean" tuning. Separate from the admin's typo-tolerance setting: a wider net is worth
+ * casting once there are already zero results, but a match past the cutoff is more likely noise
+ * than a helpful guess. `ignoreLocation` is deliberately off here (unlike the main search): a
+ * word-vs-word match should weigh where the difference falls, or sibling words that merely share
+ * an ending ("javascript" / "typescript") score as ties instead of favouring the nearer one.
+ */
+const WORD_THRESHOLD = 0.6;
+const WORD_CUTOFF = 0.55;
+
 /**
  * Distance between ranking groups. It is larger than any penalty inside a group (0 for a match
  * at the start of a word, 1 inside a word, 2 plus a 0-1 score for a typo), so a lower group
@@ -141,6 +154,26 @@ export function createEngine( items, opts ) {
 
 	const typeOf = ( index ) => typeRank[ items[ index ].pt ] || 1;
 
+	// Words to offer as "did you mean" corrections: whatever is actually in play, minus body text.
+	const dictWords = new Set();
+	DICTIONARY_FIELDS.filter( ( name ) => active.includes( name ) ).forEach( ( name ) => {
+		text[ name ].forEach( ( value ) => {
+			( value.match( /[\p{L}\p{N}]+/gu ) || [] ).forEach( ( word ) => {
+				if ( word.length > 1 ) {
+					dictWords.add( word );
+				}
+			} );
+		} );
+	} );
+	const dictFuse = new Fuse( Array.from( dictWords ), {
+		threshold: WORD_THRESHOLD,
+		includeScore: true,
+		ignoreLocation: false,
+		location: 0,
+		distance: 10,
+		minMatchCharLength: 1,
+	} );
+
 	return {
 		size: items.length,
 		/**
@@ -185,6 +218,41 @@ export function createEngine( items, opts ) {
 					refIndex: index,
 					matched: Array.from( new Set( entry.matched ) ),
 				} ) );
+		},
+		/**
+		 * A "Did you mean…" query to offer when a search finds nothing: each word that is not
+		 * already one the index actually holds is replaced by the closest one that is. Meant to be
+		 * called only once a search has already come up empty, and only offered when the corrected
+		 * query is checked to actually find something, so it is never a second dead end.
+		 *
+		 * @param {string} query   Raw query.
+		 * @param {Object} [options] { type: post type slug to restrict to }.
+		 * @return {string|null} A corrected query, or null when there is no fix worth offering.
+		 */
+		suggest( query, options ) {
+			const tokens = tokenize( query );
+			if ( ! tokens.length ) {
+				return null;
+			}
+			let changed = false;
+			const corrected = [];
+			for ( const token of tokens ) {
+				if ( dictWords.has( token.toLowerCase() ) ) {
+					corrected.push( token );
+					continue;
+				}
+				const hit = dictFuse.search( token )[ 0 ];
+				if ( ! hit || hit.score > WORD_CUTOFF ) {
+					return null;
+				}
+				changed = true;
+				corrected.push( hit.item );
+			}
+			if ( ! changed ) {
+				return null;
+			}
+			const rewritten = corrected.join( ' ' );
+			return this.search( rewritten, options ).length ? rewritten : null;
 		},
 	};
 }

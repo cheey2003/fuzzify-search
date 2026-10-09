@@ -38,6 +38,7 @@ final class Settings {
 			'fields'           => self::FIELDS,
 			'content_limit'    => 0,
 			'skip_woo_pages'   => true,
+			'placeholder'      => '',
 			'min_chars'        => 2,
 			'delay'            => 120,
 			'max_results'      => 7,
@@ -157,6 +158,10 @@ final class Settings {
 		if ( array_key_exists( 'fields', $input ) ) {
 			$wanted        = array_map( 'sanitize_key', array_filter( (array) $input['fields'], 'is_string' ) );
 			$out['fields'] = array_values( array_intersect( self::FIELDS, $wanted ) );
+		}
+
+		if ( array_key_exists( 'placeholder', $input ) ) {
+			$out['placeholder'] = sanitize_text_field( (string) $input['placeholder'] );
 		}
 
 		$out['content_limit']    = self::int_in( $input, 'content_limit', 0, 100000, (int) $out['content_limit'] );

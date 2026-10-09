@@ -89,25 +89,26 @@ final class Frontend {
 		$fields   = (array) $settings['fields'];
 
 		$config = array(
-			'indexUrl'   => Index::url(),
-			'resultsUrl' => self::results_url(),
+			'indexUrl'    => Index::url(),
+			'resultsUrl'  => self::results_url(),
 			// What Enter does: go to the results page, fall back to the browser's own search (no page to go to), or nothing (switched off).
-			'enter'      => ! $settings['results_enabled'] ? 'none' : ( '' !== self::results_page_url() ? 'results' : 'native' ),
-			'selector'   => (string) apply_filters( 'static_search_selector', 'input[type="search"][name="s"]' ),
+			'enter'       => ! $settings['results_enabled'] ? 'none' : ( '' !== self::results_page_url() ? 'results' : 'native' ),
+			'selector'    => (string) apply_filters( 'static_search_selector', 'input[type="search"][name="s"]' ),
+			'placeholder' => (string) $settings['placeholder'],
 			// The title is always searched; the rest depends on the fields chosen in the settings.
-			'fields'     => array_merge( array( 'title' ), $fields ),
-			'threshold'  => (float) $settings['threshold'],
-			'minChars'   => (int) $settings['min_chars'],
-			'delay'      => (int) $settings['delay'],
-			'maxResults' => (int) $settings['max_results'],
-			'perPage'    => (int) $settings['results_per_page'],
-			'thumbs'     => (bool) $settings['show_thumbs'],
-			'highlight'  => (bool) $settings['highlight'],
-			'snippets'   => (bool) $settings['snippets'],
-			'rank'       => (array) $settings['ranking'],
-			'typeRank'   => (array) $settings['type_priority'],
-			'typeMode'   => (string) $settings['type_mode'],
-			'i18n'       => array(
+			'fields'      => array_merge( array( 'title' ), $fields ),
+			'threshold'   => (float) $settings['threshold'],
+			'minChars'    => (int) $settings['min_chars'],
+			'delay'       => (int) $settings['delay'],
+			'maxResults'  => (int) $settings['max_results'],
+			'perPage'     => (int) $settings['results_per_page'],
+			'thumbs'      => (bool) $settings['show_thumbs'],
+			'highlight'   => (bool) $settings['highlight'],
+			'snippets'    => (bool) $settings['snippets'],
+			'rank'        => (array) $settings['ranking'],
+			'typeRank'    => (array) $settings['type_priority'],
+			'typeMode'    => (string) $settings['type_mode'],
+			'i18n'        => array(
 				'searchTitle' => __( 'Search', 'fuzzify-search' ),
 				'prompt'      => __( 'Type what you are looking for in the search box.', 'fuzzify-search' ),
 				/* translators: %s: the search query */
@@ -117,6 +118,8 @@ final class Frontend {
 				/* translators: %d: number of results */
 				'many'        => __( '%d results', 'fuzzify-search' ),
 				'none'        => __( 'No results found.', 'fuzzify-search' ),
+				/* translators: %s: a close match from the site, offered as a spelling suggestion */
+				'didYouMean'  => __( 'Did you mean %s?', 'fuzzify-search' ),
 				'more'        => __( 'Show more', 'fuzzify-search' ),
 				/* translators: %d: number of results */
 				'viewAll'     => __( 'View all %d results', 'fuzzify-search' ),

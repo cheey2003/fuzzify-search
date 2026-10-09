@@ -373,6 +373,13 @@ final class Admin {
 			<h2><?php esc_html_e( 'Search box', 'fuzzify-search' ); ?></h2>
 			<table class="form-table" role="presentation">
 				<tr>
+					<th scope="row"><label for="static-search-placeholder"><?php esc_html_e( 'Placeholder text', 'fuzzify-search' ); ?></label></th>
+					<td>
+						<input type="text" id="static-search-placeholder" class="regular-text" name="<?php echo esc_attr( $name ); ?>[placeholder]" value="<?php echo esc_attr( (string) $settings['placeholder'] ); ?>" placeholder="<?php echo esc_attr__( 'Try a search…', 'fuzzify-search' ); ?>">
+						<p class="description"><?php esc_html_e( 'Shown in the empty search box. Leave blank to keep the theme’s own text.', 'fuzzify-search' ); ?></p>
+					</td>
+				</tr>
+				<tr>
 					<th scope="row"><label for="static-search-min-chars"><?php esc_html_e( 'Start searching after', 'fuzzify-search' ); ?></label></th>
 					<td>
 						<input type="number" id="static-search-min-chars" class="small-text" min="1" max="10" name="<?php echo esc_attr( $name ); ?>[min_chars]" value="<?php echo esc_attr( (string) $settings['min_chars'] ); ?>">
@@ -527,7 +534,7 @@ final class Admin {
 				<th scope="row"><label for="static-search-preview-input"><?php esc_html_e( 'Try it', 'fuzzify-search' ); ?></label></th>
 				<td>
 					<div class="static-search-preview" data-preview>
-						<input type="search" id="static-search-preview-input" class="regular-text" data-preview-input autocomplete="off" placeholder="<?php echo esc_attr__( 'Try a search…', 'fuzzify-search' ); ?>">
+						<input type="search" id="static-search-preview-input" class="regular-text" data-preview-input autocomplete="off" placeholder="<?php echo esc_attr( '' !== $settings['placeholder'] ? (string) $settings['placeholder'] : __( 'Try a search…', 'fuzzify-search' ) ); ?>">
 						<p class="description" data-preview-status role="status" aria-live="polite"></p>
 						<table class="widefat striped" data-preview-table hidden>
 							<thead>

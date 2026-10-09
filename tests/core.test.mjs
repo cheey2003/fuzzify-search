@@ -173,6 +173,45 @@ test( 'returns nothing for empty or unmatched queries', () => {
 	assert.deepEqual( engine.search( 'zzzzqqqq' ), [] );
 } );
 
+test( 'suggest corrects a word too mangled for the search itself, by itself or in a phrase', () => {
+	assert.deepEqual( engine.search( 'carott' ), [], 'the typo is too rough for the normal threshold' );
+	assert.equal( engine.suggest( 'carott' ), 'carrot' );
+	assert.equal( engine.suggest( 'carott puree' ), 'carrot puree', 'a word already in the index is left alone' );
+} );
+
+test( 'suggest offers a word, not one arbitrary item, when several share it', () => {
+	const two = createEngine(
+		[
+			{ title: 'Cradle Carrot Puree, 130g', pt: 'product' },
+			{ title: 'Organic Carrot Soup, 200g', pt: 'product' },
+		],
+		{ threshold: 0.3, fields: [ 'title' ] }
+	);
+	const fix = two.suggest( 'carott' );
+	assert.equal( fix, 'carrot' );
+	assert.equal( two.search( fix ).length, 2, 'both carrot items are found, not just the one the old title-matching picked' );
+} );
+
+test( 'suggest stays quiet for a query that is not close to anything indexed, or that already matches nothing for other reasons', () => {
+	assert.equal( engine.suggest( 'zzznotarealwordzzz' ), null );
+	assert.equal( engine.suggest( '' ), null );
+	assert.equal( engine.suggest( '   ' ), null );
+	// Every word here is real and indexed; the only problem is that no single item has both. Nothing to fix.
+	assert.equal( engine.suggest( 'cradle lavender' ), null );
+} );
+
+test( 'suggest can be restricted to one post type, like search: no fix is offered unless it actually finds something there', () => {
+	const local = createEngine(
+		[
+			{ title: 'Why Not? Cradle Carrot Puree, 130g', pt: 'product' },
+			{ title: 'How to get rid of cradle cap?', pt: 'post' },
+		],
+		{ threshold: 0.3, fields: [ 'title' ] }
+	);
+	assert.equal( local.suggest( 'carott', { type: 'post' } ), null, 'the corrected word only exists on a product' );
+	assert.equal( local.suggest( 'carott', { type: 'product' } ), 'carrot' );
+} );
+
 test( 'snippet prefers the excerpt, cuts on a word, and adds an ellipsis', () => {
 	assert.equal( snippet( { excerpt: 'Short.', content: 'ignored' } ), 'Short.' );
 	assert.equal( snippet( { content: 'word '.repeat( 60 ) }, 50 ).endsWith( '…' ), true );

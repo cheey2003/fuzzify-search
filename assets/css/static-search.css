@@ -158,6 +158,17 @@
 	color: var(--static-search-muted);
 }
 
+.static-search-suggest {
+	padding: 0;
+	border: 0;
+	background: none;
+	font: inherit;
+	font-weight: 600;
+	color: inherit;
+	text-decoration: underline;
+	cursor: pointer;
+}
+
 .static-search-sr {
 	position: absolute;
 	width: 1px;
